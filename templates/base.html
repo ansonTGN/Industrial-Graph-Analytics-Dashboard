@@ -21,8 +21,24 @@
         body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: #333; }
         h1, h2, h3, h4, h5 { font-weight: 700; color: var(--primary-color); }
         .font-monospace { font-family: 'Roboto Mono', monospace; }
-        #network-container { width: 100%; height: 600px; background-color: #ffffff; border: 1px solid #eee; border-radius: 8px; position: relative; }
+        
+        /* MEJORA VISUALIZACIÓN GRAFO: Ocupar 100% absoluto dentro del contenedor relativo */
+        #network-container { 
+            width: 100%; 
+            height: 100%; 
+            background-color: #fcfcfc; 
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
         #loading { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; }
+        
+        /* Ajuste para punteros en tablas */
+        .cursor-pointer { cursor: pointer; }
+        .hover-target:hover { background-color: rgba(52, 152, 219, 0.1); color: var(--accent-color); font-weight: bold; }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%);">
+<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); flex-shrink: 0;">
     <div class="container-fluid px-4">
         <a class="navbar-brand d-flex align-items-center gap-2" href="#">
             <i class="fa-solid fa-network-wired text-info"></i> 
@@ -22,11 +22,12 @@
     </div>
 </nav>
 
-<div class="container-fluid h-100 overflow-hidden" style="height: calc(100vh - 56px);">
-    <div class="row h-100">
+<!-- ESTRUCTURA FLEX PARA OCUPAR TODA LA PANTALLA -->
+<div class="container-fluid d-flex flex-column overflow-hidden" style="height: calc(100vh - 56px);">
+    <div class="row h-100 flex-nowrap">
         <!-- SIDEBAR -->
-        <div class="col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm" style="z-index: 2;">
-            <div class="p-3 bg-light border-bottom">
+        <div class="col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm" style="z-index: 2; min-width: 300px; max-width: 400px;">
+            <div class="p-3 bg-light border-bottom flex-shrink-0">
                 <h6 class="mb-0 fw-bold text-uppercase text-secondary small"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h6>
             </div>
             
@@ -34,12 +35,18 @@
                 <form action="/query" method="post" id="queryForm">
                     
                     <div class="mb-4 bg-white p-3 rounded shadow-sm border">
-                        <label class="form-label fw-bold small text-dark d-flex justify-content-between">OBJETO OBJETIVO <i class="fa-solid fa-magnifying-glass text-muted"></i></label>
-                        <select id="select-param" name="param" autocomplete="off">
+                        <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                            OBJETO OBJETIVO 
+                            <span class="badge bg-info text-dark" id="target-badge" style="display:none;">Seleccionado</span>
+                        </label>
+                        <select id="select-param" name="param" autocomplete="off" placeholder="Buscar ID o Nombre...">
                             {% if current_param %}
                                 <option value="{{ current_param }}" selected>{{ current_param_label }}</option>
                             {% endif %}
                         </select>
+                        <div class="form-text small mt-1 text-muted fst-italic">
+                            <i class="fa-solid fa-circle-info me-1"></i>Selecciona un nodo del grafo o tabla para rellenar esto.
+                        </div>
                     </div>
 
                     <label class="form-label fw-bold small text-dark mb-2 px-1">CONSULTAS DISPONIBLES</label>
@@ -52,7 +59,6 @@
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto rounded-pill" style="font-size: 0.65rem;">{{ queries | length }}</span>
                                 </button>
                             </h2>
-                            <!-- SE HA SIMPLIFICADO EL ACCORDION-COLLAPSE PARA EVITAR ERRORES DE SINTAXIS -->
                             <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#queriesAccordion">
                                 <div class="accordion-body p-0">
                                     <div class="list-group list-group-flush">
@@ -71,7 +77,7 @@
                         {% endfor %}
                     </div>
 
-                    <div class="d-grid mt-4 sticky-bottom pb-2">
+                    <div class="d-grid mt-4 pb-4">
                         <button type="submit" class="btn btn-primary fw-bold shadow py-2"><i class="fa-solid fa-bolt me-2"></i> EJECUTAR</button>
                     </div>
                 </form>
@@ -82,80 +88,160 @@
             </div>
         </div>
 
-        <!-- MAIN -->
-        <div class="col-lg-9 h-100 p-0 overflow-hidden bg-light d-flex flex-column">
+        <!-- MAIN CONTENT -->
+        <div class="col-lg-9 col-12 h-100 p-0 flex-grow-1 d-flex flex-column position-relative">
             {% if results %}
-            <div class="bg-white px-4 py-3 border-bottom d-flex justify-content-between align-items-center shadow-sm" style="z-index: 1;">
+            <!-- Header Resultados -->
+            <div class="bg-white px-4 py-3 border-bottom d-flex justify-content-between align-items-center shadow-sm flex-shrink-0" style="z-index: 10;">
                 <div>
                     <h5 class="mb-0 fw-bold text-primary">{{ results.query_title }}</h5>
-                    <div class="text-muted" style="font-size: 0.75rem;">{{ results.rows | length }} registros | {{ results.timestamp }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                        <i class="fa-regular fa-clock me-1"></i>{{ results.timestamp }} 
+                        <span class="mx-2">|</span> 
+                        <i class="fa-solid fa-table-list me-1"></i>{{ results.rows | length }} resultados
+                    </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="downloadGraphPNG()">Captura</button>
-                    <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportCSV()">CSV</button>
+                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera me-1"></i> Captura</button>
+                    <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
                 </div>
             </div>
 
-            <div class="flex-grow-1 overflow-hidden d-flex flex-column p-4">
-                <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
-                    <div class="card-header bg-light border-bottom-0 p-2">
+            <!-- Area de Contenido (Tabs + Vista) -->
+            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                <div class="card h-100 border-0 rounded-0 d-flex flex-column">
+                    <div class="card-header bg-light border-bottom p-2 flex-shrink-0">
                         <ul class="nav nav-pills nav-fill gap-2" id="resultTabs" role="tablist">
-                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane">Vista Grafo</button></li>
-                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane">Vista Datos</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold small" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane">Estadísticas</button></li>
+                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane"><i class="fa-solid fa-circle-nodes me-2"></i>Vista Grafo</button></li>
+                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane"><i class="fa-solid fa-table me-2"></i>Vista Datos</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold small" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane"><i class="fa-solid fa-chart-simple me-2"></i>Estadísticas</button></li>
                         </ul>
                     </div>
 
-                    <div class="card-body p-0 overflow-hidden position-relative">
-                        <div class="tab-content h-100">
-                            <div class="tab-pane fade {% if results.is_graph %}show active{% endif %} h-100 p-0" id="graph-pane">
-                                <div id="network-container" class="w-100 h-100 bg-white"></div>
+                    <div class="card-body p-0 position-relative flex-grow-1 overflow-hidden" style="background: #fcfcfc;">
+                        <div class="tab-content h-100 w-100">
+                            
+                            <!-- PANE GRAFO -->
+                            <div class="tab-pane fade {% if results.is_graph %}show active{% endif %} h-100 w-100 position-relative" id="graph-pane">
+                                <!-- El contenedor del grafo está en base.html con CSS position:absolute -->
+                                <div id="network-container"></div>
+                                
+                                <!-- Controles Zoom -->
+                                <div class="position-absolute bottom-0 start-0 m-3 btn-group-vertical shadow-sm" style="z-index: 10;">
+                                    <button class="btn btn-light border btn-sm" onclick="network.moveTo({scale: 1.5})"><i class="fa-solid fa-plus"></i></button>
+                                    <button class="btn btn-light border btn-sm" onclick="network.fit()"><i class="fa-solid fa-compress"></i></button>
+                                    <button class="btn btn-light border btn-sm" onclick="network.moveTo({scale: 0.5})"><i class="fa-solid fa-minus"></i></button>
+                                </div>
+
+                                <!-- Leyenda Flotante -->
+                                <div class="position-absolute bottom-0 end-0 m-3 p-2 bg-white bg-opacity-90 rounded shadow-sm border small" style="pointer-events: none; z-index: 10;">
+                                    <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-warning"></i> Material</span>
+                                    <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-primary"></i> Equipo</span>
+                                    <span class="badge rounded-pill text-bg-light border text-dark"><i class="fa-solid fa-circle text-success"></i> Ubicación</span>
+                                </div>
                             </div>
-                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100" id="table-pane">
-                                <div class="table-responsive h-100">
-                                    <table class="table table-hover table-striped table-sm mb-0 align-middle small">
+
+                            <!-- PANE TABLA -->
+                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 overflow-auto" id="table-pane">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped table-sm mb-0 align-middle small table-bordered">
                                         <thead class="table-dark sticky-top">
                                             <tr>
-                                                {% for col in results.columns %}<th>{{ col }}</th>{% endfor %}
+                                                <th class="text-center bg-secondary" style="width: 50px;">#</th>
+                                                {% for col in results.columns %}
+                                                <th class="text-uppercase">{{ col }}</th>
+                                                {% endfor %}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for row in results.rows %}
                                             <tr>
-                                                {% for col in results.columns %}<td>{{ row[col] }}</td>{% endfor %}
+                                                <td class="text-center text-muted">{{ loop.index }}</td>
+                                                {% for col in results.columns %}
+                                                <td>
+                                                    {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col or "CODIGO" in col %}
+                                                        {% if row[col] != "-" and "Lista" not in row[col] %}
+                                                        <div class="d-flex justify-content-between align-items-center hover-target p-1 rounded transition">
+                                                            <span class="fw-bold font-monospace text-dark">{{ row[col] }}</span>
+                                                            <button class="btn btn-link btn-sm p-0 ms-2 text-decoration-none" 
+                                                                    onclick="updateSearchParam('{{ row[col] }}', '{{ row[col] }} ({{ col }})')" 
+                                                                    title="Usar como objetivo">
+                                                                <i class="fa-solid fa-crosshairs text-primary"></i>
+                                                            </button>
+                                                        </div>
+                                                        {% else %}
+                                                            {{ row[col] }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {{ row[col] }}
+                                                    {% endif %}
+                                                </td>
+                                                {% endfor %}
                                             </tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                            <div class="tab-pane fade h-100 p-4" id="chart-pane">
-                                <div style="height: 80%; width: 100%;"><canvas id="mainChart"></canvas></div>
-                                <p class="text-center text-muted small mt-3" id="chart-msg"></p>
+
+                            <!-- PANE CHART -->
+                            <div class="tab-pane fade h-100 w-100 p-4 overflow-hidden" id="chart-pane">
+                                <div class="d-flex flex-column h-100">
+                                    <h6 class="text-center text-secondary text-uppercase fw-bold mb-3" id="chart-title">Análisis de Datos</h6>
+                                    <div style="flex-grow: 1; position: relative; width: 100%;">
+                                        <canvas id="mainChart"></canvas>
+                                    </div>
+                                    <p class="text-center text-muted small mt-2" id="chart-msg"></p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             {% else %}
-            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50">
-                <i class="fa-solid fa-magnifying-glass-chart fa-6x mb-3"></i>
-                <h4 class="fw-light">Seleccione una consulta</h4>
+            <!-- Estado vacío -->
+            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50 bg-light">
+                <div class="bg-white p-5 rounded-circle shadow-sm mb-4">
+                    <i class="fa-solid fa-magnifying-glass-chart fa-4x text-primary opacity-50"></i>
+                </div>
+                <h3 class="fw-bold text-dark">Esperando Consulta</h3>
+                <p>Seleccione una consulta del panel izquierdo para comenzar.</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="nodeModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white py-2"><h6 class="modal-title fw-bold">Detalle</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body text-center">
-                <h6 id="modalTitle" class="fw-bold mb-1"></h6>
-                <span id="modalType" class="badge bg-secondary mb-3"></span>
-                <div class="d-grid"><button class="btn btn-outline-primary btn-sm" onclick="setFocusParam()">Filtrar por esto</button></div>
+<!-- OFF CANVAS DETALLE NODO -->
+<div class="offcanvas offcanvas-end shadow" tabindex="-1" id="nodeOffcanvas" aria-labelledby="offcanvasRightLabel" data-bs-backdrop="false">
+    <div class="offcanvas-header bg-primary text-white">
+        <h5 id="offcanvasRightLabel" class="fw-bold"><i class="fa-solid fa-circle-info me-2"></i>Detalle del Nodo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="text-center mb-4">
+            <div class="display-6 mb-2 text-primary"><i class="fa-solid fa-cube"></i></div>
+            <h5 id="canvasNodeLabel" class="fw-bold text-break"></h5>
+            <span id="canvasNodeType" class="badge bg-secondary fs-6"></span>
+        </div>
+        
+        <div class="card bg-light border-0 mb-4">
+            <div class="card-body">
+                <label class="small text-muted fw-bold text-uppercase">Identificador Único</label>
+                <div class="d-flex align-items-center gap-2">
+                    <code id="canvasNodeId" class="fs-5 fw-bold text-dark"></code>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('canvasNodeId').innerText)"><i class="fa-regular fa-copy"></i></button>
+                </div>
             </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary py-2 fw-bold" onclick="setFocusFromCanvas()">
+                <i class="fa-solid fa-crosshairs me-2"></i> Usar como Objetivo
+            </button>
+            <button class="btn btn-outline-dark py-2" data-bs-dismiss="offcanvas">
+                Cerrar
+            </button>
         </div>
     </div>
 </div>
@@ -164,16 +250,36 @@
 
 {% block scripts %}
 <script>
+    // --- VARIABLES GLOBALES ---
     let tomSelectInstance;
+    let network = null;
+    let nodesDataSet, edgesDataSet;
+    let selectedNodeData = null; 
+
+    // --- INICIALIZACIÓN ---
     document.addEventListener("DOMContentLoaded", function(){
+        // Configurar TomSelect
         tomSelectInstance = new TomSelect("#select-param", {
-            valueField: 'id', labelField: 'title', searchField: ['title', 'id'], preload: 'focus',
+            valueField: 'id', 
+            labelField: 'title', 
+            searchField: ['title', 'id'], 
+            preload: 'focus',
+            placeholder: 'Escribe para buscar...',
             load: function(query, callback) {
-                fetch('/api/search?q=' + encodeURIComponent(query || '')).then(r => r.json()).then(json => callback(json)).catch(() => callback());
+                const url = '/api/search?q=' + encodeURIComponent(query || '');
+                fetch(url).then(r => r.json()).then(json => callback(json)).catch(() => callback());
+            },
+            render: {
+                option: function(item, escape) {
+                    return `<div class="py-2 d-flex align-items-center border-bottom">
+                                <div class="me-2"><span class="badge bg-secondary">${escape(item.label)}</span></div>
+                                <div><div class="fw-bold">${escape(item.title)}</div></div>
+                            </div>`;
+                }
             }
         });
         
-        // AUTO-EXPANDIR ACORDEON SELECCIONADO (Lógica movida al JS)
+        // Expandir acordeón activo
         {% if current_query %}
             const activeRadio = document.querySelector('input[name="query_id"][value="{{ current_query }}"]');
             if(activeRadio) {
@@ -183,70 +289,223 @@
         {% endif %}
     });
 
-    let network = null;
-    let nodesDataSet, edgesDataSet;
+    // --- LÓGICA DE ACTUALIZACIÓN DEL BUSCADOR ---
+    function updateSearchParam(id, label) {
+        if(tomSelectInstance) {
+            tomSelectInstance.addOption({id: id, title: label, label: 'Selección Manual'});
+            tomSelectInstance.setValue(id);
+            const badge = document.getElementById('target-badge');
+            badge.style.display = 'inline-block';
+            setTimeout(() => badge.style.display = 'none', 2000);
+            
+            const offcanvasEl = document.getElementById('nodeOffcanvas');
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if (bsOffcanvas) bsOffcanvas.hide();
+        }
+    }
 
+    function setFocusFromCanvas() {
+        if (selectedNodeData) {
+            updateSearchParam(selectedNodeData.id, selectedNodeData.label);
+        }
+    }
+
+    // --- LÓGICA DE RESULTADOS ---
     {% if results %}
         const rows = {{ results.rows | json_encode() | safe }};
         const cols = {{ results.columns | json_encode() | safe }};
+        const isGraphQuery = {{ results.is_graph | json_encode() }};
+        
         const hasGraphData = cols.includes('A_ID') && cols.includes('B_ID');
 
-        if (hasGraphData && {{ results.is_graph | json_encode() }}) initGraph(rows);
-        else if (hasGraphData) document.getElementById('network-container').innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center text-muted">Vista tabular preferida.</div>';
-        else document.getElementById('network-container').innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center text-muted">Datos no gráficos.</div>';
+        // 1. INICIAR VISTA GRAFO
+        if (hasGraphData && isGraphQuery) {
+            initGraph(rows);
+        } else if (hasGraphData) {
+            document.getElementById('network-container').innerHTML = 
+                '<div class="d-flex h-100 align-items-center justify-content-center text-muted flex-column"><i class="fa-solid fa-table fa-2x mb-2"></i><span>Vista tabular preferida.</span></div>';
+        } else {
+            document.getElementById('network-container').innerHTML = 
+                '<div class="d-flex h-100 align-items-center justify-content-center text-muted flex-column"><i class="fa-solid fa-ban fa-2x mb-2"></i><span>Datos no representables en grafo.</span></div>';
+        }
 
-        const numericCol = cols.find(c => ['CANTIDAD', 'TOTAL', 'SCORE', 'VECES', 'PRECIO'].some(k => c.includes(k)));
-        const labelCol = cols.find(c => ['DESCRIPCION', 'NAME', 'EQUIPO', 'MATERIAL'].includes(c)) || cols[0];
+        // 2. MEJORA GRÁFICO DE BARRAS (CHART.JS)
+        // Detectar columnas numéricas con una lista de palabras clave más amplia
+        const numericKeywords = [
+            'CANTIDAD', 'TOTAL', 'SCORE', 'VECES', 'PRECIO', 'STOCK', 
+            'NUM', 'CONEXIONES', 'RIESGO', 'LONGITUD', 'DENSIDAD', 
+            'PORCENTAJE', 'MEDIA', 'PROMEDIO', 'OBSOLETOS'
+        ];
+        
+        const numericCol = cols.find(c => numericKeywords.some(k => c.toUpperCase().includes(k)));
+        
+        // Detectar etiqueta (Nombre, Descripción, ID, o la primera columna de texto)
+        const labelKeywords = ['DESCRIPCION', 'NAME', 'NOMBRE', 'EQUIPO', 'MATERIAL', 'A_LABEL', 'PLANTA', 'TAG'];
+        const labelCol = cols.find(c => labelKeywords.some(k => c.toUpperCase().includes(k))) || cols[0];
 
         if (numericCol && rows.length > 0) {
-            new Chart(document.getElementById('mainChart').getContext('2d'), {
+            // Actualizar título
+            document.getElementById('chart-title').innerText = `${numericCol} por ${labelCol}`;
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            // Preparar datos
+            const labels = rows.map(r => (r[labelCol] || '').substring(0, 30) + (r[labelCol]?.length>30?'...':''));
+            const dataValues = rows.map(r => {
+                // Limpiar strings para obtener float (quitar '€', '$', etc si los hubiera)
+                let val = r[numericCol];
+                if (typeof val === 'string') val = val.replace(/[^0-9.-]+/g,"");
+                return parseFloat(val) || 0;
+            });
+
+            new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: rows.map(r => r[labelCol].substring(0,20)),
-                    datasets: [{ label: numericCol, data: rows.map(r => parseFloat(r[numericCol]) || 0), backgroundColor: '#3498db' }]
-                }, options: { maintainAspectRatio: false }
+                    labels: labels,
+                    datasets: [{ 
+                        label: numericCol, 
+                        data: dataValues, 
+                        backgroundColor: dataValues.map(v => v > 0 ? '#3498db' : '#e74c3c'),
+                        borderRadius: 4,
+                        borderWidth: 1
+                    }]
+                }, 
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false, // Importante para llenar el div padre
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { 
+                            callbacks: { 
+                                label: function(context) { 
+                                    return context.parsed.y + ' ' + numericCol.toLowerCase(); 
+                                } 
+                            } 
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+                        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } }
+                    }
+                }
             });
-        } else document.getElementById('chart-msg').innerText = "Sin datos numéricos.";
+        } else {
+            document.getElementById('chart-msg').innerHTML = `<i class="fa-solid fa-circle-exclamation text-warning me-2"></i> No se encontraron columnas numéricas obvias (ej: Total, Cantidad, Stock) para graficar en: <b>[${cols.join(", ")}]</b>`;
+        }
 
+        // --- FUNCIÓN PARA INICIALIZAR VIS.JS (MEJORADA) ---
         function initGraph(data) {
             const container = document.getElementById('network-container');
             const nodesMap = new Map();
             const edgesArr = [];
+            
             data.forEach((row) => {
-                if (row.A_ID && !nodesMap.has(row.A_ID)) nodesMap.set(row.A_ID, {id:row.A_ID, label:row.A_LABEL, group:row.A_TYPE});
-                if (row.B_ID && !nodesMap.has(row.B_ID)) nodesMap.set(row.B_ID, {id:row.B_ID, label:row.B_LABEL, group:row.B_TYPE});
-                if (row.A_ID && row.B_ID) edgesArr.push({from:row.A_ID, to:row.B_ID, label:row.RELACION});
+                // Nodo A
+                if (row.A_ID && !nodesMap.has(row.A_ID)) {
+                    nodesMap.set(row.A_ID, {
+                        id: row.A_ID, 
+                        label: formatLabel(row.A_LABEL), 
+                        fullLabel: row.A_LABEL,
+                        group: row.A_TYPE,
+                        value: 1 // Tamaño base
+                    });
+                }
+                // Nodo B
+                if (row.B_ID && !nodesMap.has(row.B_ID)) {
+                    nodesMap.set(row.B_ID, {
+                        id: row.B_ID, 
+                        label: formatLabel(row.B_LABEL), 
+                        fullLabel: row.B_LABEL,
+                        group: row.B_TYPE,
+                        value: 1
+                    });
+                }
+                // Relación
+                if (row.A_ID && row.B_ID) {
+                    edgesArr.push({
+                        from: row.A_ID, 
+                        to: row.B_ID, 
+                        label: row.RELACION || '', 
+                        arrows: 'to',
+                        color: { color: '#bdc3c7', inherit: false },
+                        font: { align: 'middle', size: 9, strokeWidth: 2, strokeColor: '#ffffff' }
+                    });
+                }
             });
+
             nodesDataSet = new vis.DataSet(Array.from(nodesMap.values()));
             edgesDataSet = new vis.DataSet(edgesArr);
-            network = new vis.Network(container, { nodes: nodesDataSet, edges: edgesDataSet }, { 
-                nodes: { shape: 'dot' }, 
-                groups: { Material:{color:'#f1c40f'}, Equipo:{color:'#3498db'}, UbicacionTecnica:{color:'#2ecc71'} }
-            });
+
+            // CONFIGURACIÓN DE FÍSICA MEJORADA PARA EXPANDIR EL GRAFO
+            const options = {
+                nodes: { 
+                    shape: 'dot', 
+                    scaling: { min: 10, max: 30 },
+                    font: { size: 14, face: 'Outfit', color: '#333' },
+                    borderWidth: 2,
+                    shadow: true
+                }, 
+                edges: { width: 1, smooth: { type: 'continuous' } },
+                groups: { 
+                    Material: { color: { background:'#f1c40f', border:'#f39c12'} }, 
+                    Equipo:   { color: { background:'#3498db', border:'#2980b9'} }, 
+                    UbicacionTecnica: { color: { background:'#2ecc71', border:'#27ae60'} },
+                    Repuesto: { color: { background:'#e67e22', border:'#d35400'} },
+                    Obsoleto: { color: { background:'#e74c3c', border:'#c0392b'}, shape: 'triangle' }
+                },
+                physics: {
+                    stabilization: true,
+                    barnesHut: { 
+                        gravitationalConstant: -4000, // Más repulsión
+                        centralGravity: 0.1,         // Menos atracción al centro
+                        springLength: 250,           // Conexiones más largas
+                        springConstant: 0.04
+                    }
+                },
+                interaction: { hover: true, tooltipDelay: 200, zoomView: true }
+            };
+
+            network = new vis.Network(container, { nodes: nodesDataSet, edges: edgesDataSet }, options);
+
             network.on("click", function (params) {
                 if (params.nodes.length > 0) {
-                    let n = nodesDataSet.get(params.nodes[0]);
-                    document.getElementById('modalTitle').innerText = n.label;
-                    document.getElementById('modalType').innerText = n.group;
-                    selectedNodeId = n.id;
-                    new bootstrap.Modal(document.getElementById('nodeModal')).show();
+                    const nodeId = params.nodes[0];
+                    const node = nodesDataSet.get(nodeId);
+                    
+                    selectedNodeData = { id: node.id, label: node.fullLabel };
+
+                    document.getElementById('canvasNodeLabel').innerText = node.fullLabel;
+                    document.getElementById('canvasNodeType').innerText = node.group;
+                    document.getElementById('canvasNodeId').innerText = node.id;
+
+                    const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('nodeOffcanvas'));
+                    bsOffcanvas.show();
                 }
             });
         }
-        let selectedNodeId = null;
-        function setFocusParam() {
-            if(tomSelectInstance && selectedNodeId) {
-                tomSelectInstance.addOption({id: selectedNodeId, title: document.getElementById('modalTitle').innerText});
-                tomSelectInstance.setValue(selectedNodeId);
-                bootstrap.Modal.getInstance(document.getElementById('nodeModal')).hide();
-            }
+
+        function formatLabel(text) {
+            if(!text) return "";
+            return text.length > 20 ? text.substring(0, 18) + "..." : text;
         }
-        function downloadGraphPNG() { network.fit({animation:false}); setTimeout(() => { 
-            let a = document.createElement('a'); a.download = 'grafo.png'; a.href = document.getElementById('network-container').getElementsByTagName('canvas')[0].toDataURL(); a.click(); 
-        }, 500); }
+
+        function downloadGraphPNG() { 
+            network.fit({animation:false}); 
+            setTimeout(() => { 
+                let a = document.createElement('a'); 
+                a.download = 'grafo_industrial.png'; 
+                a.href = document.getElementById('network-container').getElementsByTagName('canvas')[0].toDataURL(); 
+                a.click(); 
+            }, 500); 
+        }
+
         function exportCSV() {
-            let csv = cols.join(",") + "\n"; rows.forEach(r => csv += cols.map(c => `"${(r[c]||'').replace(/"/g,'""')}"`).join(",") + "\n");
-            let a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = 'datos.csv'; a.click();
+            let csv = cols.join(",") + "\n"; 
+            rows.forEach(r => csv += cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(",") + "\n");
+            let a = document.createElement('a'); 
+            a.href = window.URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); 
+            a.download = 'reporte_industrial.csv'; 
+            a.click();
         }
     {% endif %}
 </script>

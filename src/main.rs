@@ -9,7 +9,7 @@ use std::env;
 
 // Importamos el módulo de consultas
 mod queries;
-use queries::{get_all_queries, QueryDefinition};
+use queries::{load_queries_from_file, QueryDefinition};
 
 // ==========================================
 // 1. ESTRUCTURAS
@@ -19,6 +19,8 @@ struct AppState {
     graph: Mutex<Option<Graph>>,
     db_host: Mutex<String>, 
     tera: Tera,
+    // Agregamos el vector de consultas al estado global
+    queries: Vec<QueryDefinition>,
 }
 
 #[derive(Deserialize)]
@@ -163,16 +165,14 @@ async fn dashboard(data: web::Data<AppState>) -> impl Responder {
     let host_info = data.db_host.lock().await;
     ctx.insert("db_host", &*host_info);
 
-    // -- CORRECCIÓN CRÍTICA: Inicializar variables vacías para el GET --
     ctx.insert("current_query", "");
     ctx.insert("current_param", "");
     ctx.insert("current_param_label", "");
-    // ----------------------------------------------------------------
 
-    let all_queries = get_all_queries();
+    // Usamos las queries cargadas en el AppState en lugar de llamar a una función
     let mut grouped: BTreeMap<String, Vec<QueryDefinition>> = BTreeMap::new();
-    for q in all_queries {
-        grouped.entry(q.category.to_string()).or_insert(Vec::new()).push(q);
+    for q in &data.queries {
+        grouped.entry(q.category.to_string()).or_insert(Vec::new()).push(q.clone());
     }
     ctx.insert("categorized_queries", &grouped);
     
@@ -192,23 +192,24 @@ async fn execute_query(data: web::Data<AppState>, form: web::Form<QueryParams>) 
         None => return HttpResponse::Unauthorized().body("DB desconectada"),
     };
 
-    let all_queries = get_all_queries();
-    let query_def = match all_queries.iter().find(|q| q.id == form.query_id) {
+    // Buscamos la query en el vector del AppState
+    let query_def = match data.queries.iter().find(|q| q.id == form.query_id) {
         Some(q) => q.clone(), 
         None => return HttpResponse::BadRequest().body("Consulta no encontrada"),
     };
 
     let mut current_param_label = String::new();
     let current_param_val = form.param.as_deref().unwrap_or("").to_string();
-    let mut query_obj = query(query_def.cypher);
+    let mut query_obj = query(&query_def.cypher);
 
     let mut ctx = Context::new();
     let host_info = data.db_host.lock().await;
     ctx.insert("db_host", &*host_info);
     
+    // Rellenar menú lateral
     let mut grouped: BTreeMap<String, Vec<QueryDefinition>> = BTreeMap::new();
-    for q in all_queries {
-        grouped.entry(q.category.to_string()).or_insert(Vec::new()).push(q);
+    for q in &data.queries {
+        grouped.entry(q.category.to_string()).or_insert(Vec::new()).push(q.clone());
     }
     ctx.insert("categorized_queries", &grouped);
     ctx.insert("current_query", &form.query_id);
@@ -285,10 +286,14 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok(); 
     let tera = Tera::new("templates/**/*").expect("Error cargando templates");
     
+    // Cargar queries del JSON al inicio
+    let loaded_queries = load_queries_from_file();
+
     let app_state = web::Data::new(AppState {
         graph: Mutex::new(None),
         db_host: Mutex::new(String::new()),
         tera,
+        queries: loaded_queries, // Inyectamos las queries en el estado
     });
     
     println!("🚀 SERVIDOR INICIADO EN: http://0.0.0.0:8081");

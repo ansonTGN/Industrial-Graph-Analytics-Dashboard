@@ -1,0 +1,623 @@
+[
+  {
+    "id": "M01",
+    "category": "Mantenimiento",
+    "title": "Desglose BOM (Multinivel)",
+    "description": "Visualización gráfica de la estructura completa descendente (padres, hijos y materiales) hasta 6 niveles.",
+    "cypher": "MATCH path = (root {id: $p})-[:CONTIENE*1..6]->(child) UNWIND relationships(path) as r WITH startNode(r) as a, endNode(r) as b, r RETURN DISTINCT a.id as A_ID, coalesce(a.name, a.id) as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, coalesce(b.name, b.id) as B_LABEL, labels(b)[0] as B_TYPE, coalesce(r.quantity, b.quantity, \"1\") as CANTIDAD LIMIT 1000",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-share-nodes"
+  },
+  {
+    "id": "M02",
+    "category": "Mantenimiento",
+    "title": "Intercambiabilidad",
+    "description": "Equipos distintos que utilizan el mismo repuesto.",
+    "cypher": "MATCH (m:Material {id: $p}) MATCH (e1:Equipo)-[:CONTIENE*]->(m)<-[:CONTIENE*]-(e2:Equipo) WHERE e1.id <> e2.id RETURN DISTINCT e1.id as A_ID, e1.name as A_LABEL, \"Equipo\" as A_TYPE, m.id as B_ID, m.name as B_LABEL, \"Repuesto\" as B_TYPE, \"COMPARTIDO\" as RELACION LIMIT 100",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-random"
+  },
+  {
+    "id": "M03",
+    "category": "Mantenimiento",
+    "title": "Dónde se usa (Listado)",
+    "description": "Listado tabular de todos los equipos que instalan este material.",
+    "cypher": "MATCH (m:Material {id: $p}) MATCH (e:Equipo)-[:CONTIENE*]->(m) OPTIONAL MATCH (ut:UbicacionTecnica)-[:CONTIENE*]->(e) RETURN DISTINCT e.id as EQUIPO, e.name as DESC_EQUIPO, coalesce(ut.id, \"Sin Ubicación\") as UBICACION, coalesce(m.quantity, \"1\") as CANTIDAD",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-map-location-dot"
+  },
+  {
+    "id": "M04",
+    "category": "Mantenimiento",
+    "title": "Impacto Obsolescencia",
+    "description": "Visualiza el riesgo de propagación de materiales obsoletos.",
+    "cypher": "MATCH (m:Material) WHERE m.status_flag IN ['X', 'OBS', 'Obsoleto'] MATCH (e:Equipo)-[:CONTIENE*]->(m) RETURN e.id as A_ID, e.name as A_LABEL, \"Equipo\" as A_TYPE, m.id as B_ID, m.name as B_LABEL, \"Obsoleto\" as B_TYPE, \"RIESGO\" as RELACION LIMIT 200",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-triangle-exclamation"
+  },
+  {
+    "id": "M05",
+    "category": "Mantenimiento",
+    "title": "Maestro Materiales Planta",
+    "description": "Listado completo de materiales necesarios para una parada de planta.",
+    "cypher": "MATCH (u:UbicacionTecnica {id: $p})-[:CONTIENE*]->(e:Equipo)-[r:CONTIENE]->(m:Material) RETURN u.id as PLANTA, e.id as EQUIPO, m.id as MATERIAL, m.name as DESCRIPCION, sum(toInteger(coalesce(r.quantity, m.quantity, \"1\"))) as TOTAL ORDER BY EQUIPO LIMIT 1000",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-clipboard-list"
+  },
+  {
+    "id": "M06",
+    "category": "Mantenimiento",
+    "title": "Equipos sin Repuestos",
+    "description": "Equipos que no tienen ningún material conectado.",
+    "cypher": "MATCH (e:Equipo) WHERE NOT (e)-[:CONTIENE*]->(:Material) RETURN e.id as ID, e.name as EQUIPO, labels(e)[0] as TIPO LIMIT 100",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-battery-empty"
+  },
+  {
+    "id": "M07",
+    "category": "Mantenimiento",
+    "title": "Top 20 Equipos Críticos",
+    "description": "Equipos con mayor diversidad de componentes.",
+    "cypher": "MATCH (e:Equipo)-[:CONTIENE*]->(m:Material) RETURN e.id as EQUIPO, e.name as NOMBRE, count(DISTINCT m) as DIVERSIDAD_PARTES ORDER BY DIVERSIDAD_PARTES DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-trophy"
+  },
+  {
+    "id": "M08",
+    "category": "Mantenimiento",
+    "title": "Bombas y Motores",
+    "description": "Filtrado de equipos rotativos.",
+    "cypher": "MATCH (e:Equipo) WHERE toLower(e.name) CONTAINS 'bomba' OR toLower(e.name) CONTAINS 'motor' OPTIONAL MATCH (e)-[:CONTIENE*]->(m:Material) RETURN e.id as TAG, e.name as DESCRIPCION, count(DISTINCT m) as NUM_REPUESTOS LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-fan"
+  },
+  {
+    "id": "M09",
+    "category": "Mantenimiento",
+    "title": "Materiales Rotables",
+    "description": "Identificación de componentes reparables.",
+    "cypher": "MATCH (m:Material) WHERE toLower(m.name) CONTAINS 'rotor' OR toLower(m.name) CONTAINS 'estator' OR toLower(m.type) = 'rotable' RETURN m.id as CODIGO, m.name as DESCRIPCION, coalesce(m.price, \"0\") as PRECIO_EST LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-rotate"
+  },
+  {
+    "id": "M10",
+    "category": "Mantenimiento",
+    "title": "Kits de Mantenimiento",
+    "description": "Agrupación de sellos, juntas y rodamientos por equipo.",
+    "cypher": "MATCH (e:Equipo {id: $p})-[:CONTIENE*]->(m:Material) WHERE toLower(m.name) CONTAINS 'sello' OR toLower(m.name) CONTAINS 'junta' OR toLower(m.name) CONTAINS 'rodamiento' RETURN e.name as EQUIPO, m.id as MATERIAL, m.name as COMPONENTE, coalesce(m.quantity, \"1\") as CANT",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-toolbox"
+  },
+  {
+    "id": "M11",
+    "category": "Mantenimiento",
+    "title": "Entorno Operativo 360",
+    "description": "Qué rodea al equipo seleccionado.",
+    "cypher": "MATCH (c {id: $p})-[r]-(n) RETURN c.id as A_ID, c.name as A_LABEL, labels(c)[0] as A_TYPE, n.id as B_ID, n.name as B_LABEL, labels(n)[0] as B_TYPE, type(r) as RELACION LIMIT 50",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-arrows-to-circle"
+  },
+  {
+    "id": "M12",
+    "category": "Mantenimiento",
+    "title": "Análisis de Fallo Potencial",
+    "description": "Si falla este material, ¿cuántos equipos se detienen?",
+    "cypher": "MATCH (m:Material {id: $p})<-[:CONTIENE*]-(e:Equipo) RETURN m.name as CAUSA_RAIZ, count(DISTINCT e) as EQUIPOS_AFECTADOS, collect(DISTINCT e.id)[..10] as EJEMPLOS_TAGS",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-bomb"
+  },
+  {
+    "id": "S01",
+    "category": "Compras",
+    "title": "Alta Rotación (Top 20)",
+    "description": "Materiales presentes en más equipos.",
+    "cypher": "MATCH (m:Material)<-[:CONTIENE*]-(e:Equipo) RETURN m.id as CODIGO, m.name as DESCRIPCION, count(DISTINCT e) as EQUIPOS_USO ORDER BY EQUIPOS_USO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-fire"
+  },
+  {
+    "id": "S02",
+    "category": "Compras",
+    "title": "Cluster de Piezas",
+    "description": "Visualizar qué equipos comparten un repuesto específico.",
+    "cypher": "MATCH path = (e:Equipo)-[:CONTIENE*]->(m:Material {id: $p}) WITH m, e, last(relationships(path)) as r RETURN m.id as A_ID, m.name as A_LABEL, \"Material\" as A_TYPE, e.id as B_ID, e.name as B_LABEL, \"Equipo\" as B_TYPE, coalesce(r.quantity, \"1\") as CANTIDAD LIMIT 100",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-circle-nodes"
+  },
+  {
+    "id": "S03",
+    "category": "Compras",
+    "title": "Riesgo Stock Único",
+    "description": "Materiales que solo se usan en 1 equipo en toda la planta.",
+    "cypher": "MATCH (m:Material)<-[:CONTIENE*]-(e:Equipo) WITH m, count(DISTINCT e) as uso WHERE uso = 1 MATCH (e)-[:CONTIENE*]->(m) RETURN m.id as MATERIAL, m.name as DESCRIPCION, e.name as UNICO_USUARIO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-snowflake"
+  },
+  {
+    "id": "S04",
+    "category": "Compras",
+    "title": "Demanda Global Agregada",
+    "description": "Suma total de unidades instaladas considerando cantidades.",
+    "cypher": "MATCH path = (e:Equipo)-[:CONTIENE*]->(m:Material {id: $p}) WITH m, e, last(relationships(path)) as r RETURN m.id as CODIGO, m.name as DESCRIPCION, sum(toInteger(coalesce(r.quantity, m.quantity, \"1\"))) as TOTAL_INSTALADO, count(DISTINCT e) as NUM_EQUIPOS",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-calculator"
+  },
+  {
+    "id": "S05",
+    "category": "Compras",
+    "title": "Estandarización Multi-Planta",
+    "description": "Materiales usados en distintas Ubicaciones Técnicas Raíz.",
+    "cypher": "MATCH (ut:UbicacionTecnica)-[:CONTIENE*]->(m:Material) WHERE NOT (ut)<-[:CONTIENE]-() WITH m, collect(DISTINCT ut.name) as plantas WHERE size(plantas) > 1 RETURN m.id as MATERIAL, m.name as DESC, size(plantas) as NUM_PLANTAS, plantas as LISTA LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-building"
+  },
+  {
+    "id": "S06",
+    "category": "Compras",
+    "title": "Posibles Duplicados (Nombre)",
+    "description": "Materiales con el mismo nombre descriptivo pero distinto ID.",
+    "cypher": "MATCH (m:Material) WITH toLower(m.name) as n, collect(m.id) as ids, count(*) as c WHERE c > 1 AND n IS NOT NULL RETURN n as NOMBRE_DUPLICADO, c as VECES, ids as CODIGOS ORDER BY c DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-clone"
+  },
+  {
+    "id": "S07",
+    "category": "Compras",
+    "title": "Inventario Fantasma",
+    "description": "Materiales creados en el sistema pero no asignados a ningún equipo.",
+    "cypher": "MATCH (m:Material) WHERE NOT ()-[:CONTIENE]->(m) RETURN m.id as CODIGO, m.name as DESCRIPCION, \"SIN ASIGNACION\" as ESTADO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-ghost"
+  },
+  {
+    "id": "S08",
+    "category": "Compras",
+    "title": "Valuación Repuestos (Simulado)",
+    "description": "Listado de materiales asumiendo quantity como Stock.",
+    "cypher": "MATCH (m:Material) WHERE toInteger(m.quantity) > 0 RETURN m.id, m.name, toInteger(m.quantity) as STOCK_TEORICO ORDER BY STOCK_TEORICO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-coins"
+  },
+  {
+    "id": "S09",
+    "category": "Compras",
+    "title": "Vendor Similarities",
+    "description": "Búsqueda de proveedores comunes.",
+    "cypher": "MATCH (m:Material) WHERE toLower(m.name) CONTAINS 'skf' OR toLower(m.name) CONTAINS 'fag' OR toLower(m.name) CONTAINS 'timken' RETURN m.id, m.name as RODAMIENTO, \"PROVEEDOR_COMUN\" as TIPO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-truck"
+  },
+  {
+    "id": "S10",
+    "category": "Compras",
+    "title": "Cobertura de Stock",
+    "description": "Relación entre equipos instalados y cantidad de repuesto.",
+    "cypher": "MATCH (e:Equipo)-[r:CONTIENE]->(m:Material) RETURN m.name as MATERIAL, sum(toInteger(coalesce(r.quantity, \"1\"))) as REQ_TOTAL, count(e) as PUNTOS_USO LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-umbrella"
+  },
+  {
+    "id": "E01",
+    "category": "Ingeniería",
+    "title": "Árbol Jerárquico Completo",
+    "description": "Ruta completa desde la planta hasta el activo seleccionado.",
+    "cypher": "MATCH (target {id: $p}) MATCH path = (root:UbicacionTecnica)-[:CONTIENE*]->(target) UNWIND relationships(path) as r WITH startNode(r) as a, endNode(r) as b, type(r) as rel RETURN a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, b.name as B_LABEL, labels(b)[0] as B_TYPE, rel as RELACION",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-sitemap"
+  },
+  {
+    "id": "E02",
+    "category": "Ingeniería",
+    "title": "Densidad de Activos",
+    "description": "Conteo de activos por ubicación técnica.",
+    "cypher": "MATCH (u:UbicacionTecnica)-[:CONTIENE*]->(e:Equipo) RETURN u.name as PLANTA, count(DISTINCT e) as TOTAL_EQUIPOS ORDER BY TOTAL_EQUIPOS DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-city"
+  },
+  {
+    "id": "E03",
+    "category": "Ingeniería",
+    "title": "Niveles de Profundidad",
+    "description": "Detectar cadenas inusualmente largas.",
+    "cypher": "MATCH p=(u:UbicacionTecnica)-[:CONTIENE*]->(m:Material) RETURN length(p) as NIVEL, u.name as RAIZ, m.name as HOJA ORDER BY NIVEL DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-layer-group"
+  },
+  {
+    "id": "E04",
+    "category": "Ingeniería",
+    "title": "Equipos Huérfanos",
+    "description": "Equipos que no cuelgan de ninguna Ubicación Técnica.",
+    "cypher": "MATCH (e:Equipo) WHERE NOT (:UbicacionTecnica)-[:CONTIENE*]->(e) RETURN e.id as ID, e.name as NOMBRE, \"SIN JERARQUIA\" as ESTADO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-link-slash"
+  },
+  {
+    "id": "E05",
+    "category": "Ingeniería",
+    "title": "Sistemas Aislados",
+    "description": "Nodos totalmente desconectados.",
+    "cypher": "MATCH (n) WHERE NOT (n)--() RETURN n.id, n.name, labels(n)[0] as TIPO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-island-tropical"
+  },
+  {
+    "id": "E06",
+    "category": "Ingeniería",
+    "title": "Validación de Tags",
+    "description": "Equipos cuyo ID es sospechosamente corto.",
+    "cypher": "MATCH (e:Equipo) WHERE size(e.id) < 3 RETURN e.id as TAG_INVALIDO, e.name as NOMBRE LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-check-double"
+  },
+  {
+    "id": "E07",
+    "category": "Ingeniería",
+    "title": "Dependencias Circulares",
+    "description": "Errores lógicos (bucles) en la jerarquía.",
+    "cypher": "MATCH path = (n)-[:CONTIENE*]->(n) RETURN n.id as NODO_CIRCULAR, length(path) as LONGITUD_BUCLE LIMIT 10",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-spin fa-circle-notch"
+  },
+  {
+    "id": "E08",
+    "category": "Ingeniería",
+    "title": "Activos Sin Nombre",
+    "description": "Nodos que tienen ID pero les falta la propiedad 'name'.",
+    "cypher": "MATCH (n) WHERE n.name IS NULL OR n.name = '' RETURN n.id as ID, labels(n)[0] as TIPO LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-tag"
+  },
+  {
+    "id": "E09",
+    "category": "Ingeniería",
+    "title": "Capacidad de Planta",
+    "description": "Conteo total de nodos por tipo bajo una raíz.",
+    "cypher": "MATCH (root:UbicacionTecnica {id: $p})-[:CONTIENE*]->(n) RETURN labels(n)[0] as TIPO_ACTIVO, count(n) as CANTIDAD",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-chart-pie"
+  },
+  {
+    "id": "E10",
+    "category": "Ingeniería",
+    "title": "Trazabilidad Bottom-Up",
+    "description": "Ruta inversa desde el componente hasta la raíz.",
+    "cypher": "MATCH (m:Material {id: $p}) MATCH path = (root:UbicacionTecnica)-[:CONTIENE*]->(m) RETURN [n in nodes(path) | coalesce(n.name, n.id)] as RUTA_COMPLETA LIMIT 5",
+    "needs_param": true,
+    "is_graph": false,
+    "icon": "fa-arrow-up-from-bracket"
+  },
+  {
+    "id": "W01",
+    "category": "Almacén",
+    "title": "Necesidad de Reposición",
+    "description": "Materiales con stock (propiedad quantity) inferior a 2 unidades.",
+    "cypher": "MATCH (m:Material) WHERE toInteger(m.quantity) < 2 RETURN m.id as CODIGO, m.name as DESCRIPCION, toInteger(m.quantity) as STOCK_ACTUAL, \"URGENTE\" as PRIORIDAD ORDER BY STOCK_ACTUAL ASC LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-cart-plus"
+  },
+  {
+    "id": "W02",
+    "category": "Almacén",
+    "title": "Materiales Críticos Caros",
+    "description": "Repuestos con precio elevado (>500) y stock bajo.",
+    "cypher": "MATCH (m:Material) WHERE toFloat(replace(replace(m.price, '$', ''), '€', '')) > 500 RETURN m.id as MATERIAL, m.name as NOMBRE, m.price as PRECIO_UNITARIO, toInteger(m.quantity) as STOCK ORDER BY PRECIO_UNITARIO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-sack-dollar"
+  },
+  {
+    "id": "W03",
+    "category": "Almacén",
+    "title": "Detección Co-ocurrencia (Kits)",
+    "description": "Materiales que suelen instalarse juntos en el mismo equipo (Sugerencia de Kit).",
+    "cypher": "MATCH (e:Equipo)-[:CONTIENE]->(m1:Material), (e)-[:CONTIENE]->(m2:Material) WHERE m1.id < m2.id RETURN m1.name as MATERIAL_A, m2.name as MATERIAL_B, count(e) as FRECUENCIA_JUNTA ORDER BY FRECUENCIA_JUNTA DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-boxes-packing"
+  },
+  {
+    "id": "W04",
+    "category": "Almacén",
+    "title": "Datos Incompletos (Precio)",
+    "description": "Materiales que no tienen precio asignado en el sistema.",
+    "cypher": "MATCH (m:Material) WHERE m.price IS NULL OR m.price = '' OR m.price = '0' RETURN m.id as CODIGO, m.name as DESCRIPCION, \"FALTA_PRECIO\" as ERROR LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-file-invoice-dollar"
+  },
+  {
+    "id": "W05",
+    "category": "Almacén",
+    "title": "Análisis Valor Inventario",
+    "description": "Valor total estimado del stock por material.",
+    "cypher": "MATCH (m:Material) WHERE m.price IS NOT NULL WITH m, toFloat(replace(replace(m.price, '$', ''), '€', '')) as p, toInteger(m.quantity) as q WHERE p > 0 AND q > 0 RETURN m.id, m.name, q as STOCK, p as PRECIO, (p * q) as VALOR_TOTAL ORDER BY VALOR_TOTAL DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-chart-line"
+  },
+  {
+    "id": "W06",
+    "category": "Almacén",
+    "title": "Materiales 'Zombie'",
+    "description": "Materiales con alto stock (>5) que no se usan en ningún equipo activo.",
+    "cypher": "MATCH (m:Material) WHERE toInteger(m.quantity) > 5 AND NOT (m)<-[:CONTIENE]-() RETURN m.id, m.name, m.quantity as STOCK_INMOVILIZADO ORDER BY STOCK_INMOVILIZADO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-dizzy"
+  },
+  {
+    "id": "W07",
+    "category": "Almacén",
+    "title": "Validación Naming Convention",
+    "description": "Materiales que no siguen el estándar de mayúsculas o contienen caracteres extraños.",
+    "cypher": "MATCH (m:Material) WHERE m.name =~ '.*[a-z].*' OR m.name CONTAINS '  ' RETURN m.id, m.name as NOMBRE_NO_ESTANDAR LIMIT 50",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-spell-check"
+  },
+  {
+    "id": "W08",
+    "category": "Almacén",
+    "title": "Materiales por Fabricante",
+    "description": "Agrupación basada en palabras clave del nombre.",
+    "cypher": "MATCH (m:Material) WITH m, CASE WHEN toLower(m.name) CONTAINS 'siemens' THEN 'Siemens' WHEN toLower(m.name) CONTAINS 'abb' THEN 'ABB' WHEN toLower(m.name) CONTAINS 'cat' OR toLower(m.name) CONTAINS 'caterpillar' THEN 'Caterpillar' ELSE 'Genérico' END as FABRICANTE WHERE FABRICANTE <> 'Genérico' RETURN FABRICANTE, count(m) as TOTAL_REFS, collect(m.name)[..3] as EJEMPLOS",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-industry"
+  },
+  {
+    "id": "W09",
+    "category": "Almacén",
+    "title": "Densidad de Uso",
+    "description": "Promedio de cantidad instalada por equipo (¿Se instalan de 1 en 1 o en lotes?).",
+    "cypher": "MATCH (e:Equipo)-[r:CONTIENE]->(m:Material) RETURN m.name as MATERIAL, avg(toInteger(r.quantity)) as PROMEDIO_INSTALADO_POR_EQUIPO ORDER BY PROMEDIO_INSTALADO_POR_EQUIPO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-scale-balanced"
+  },
+  {
+    "id": "W10",
+    "category": "Almacén",
+    "title": "Sugerencia Compra Agrupada",
+    "description": "Materiales de bajo costo que deberían comprarse en volumen.",
+    "cypher": "MATCH (m:Material) WITH m, toFloat(replace(replace(m.price, '$', ''), '€', '')) as precio WHERE precio < 10 AND precio > 0 MATCH (e)-[:CONTIENE]->(m) RETURN m.name as MATERIAL_BARATO, precio as COSTO, count(DISTINCT e) as PUNTOS_CONSUMO, \"COMPRA_VOLUMEN\" as ACCION ORDER BY PUNTOS_CONSUMO DESC LIMIT 20",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-cart-flatbed"
+  },
+  {
+    "id": "G01",
+    "category": "Gestión",
+    "title": "Resumen Global Activos",
+    "description": "Conteo total de nodos por categoría.",
+    "cypher": "MATCH (n) RETURN labels(n)[0] as CATEGORIA, count(n) as TOTAL",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-globe"
+  },
+  {
+    "id": "G02",
+    "category": "Gestión",
+    "title": "Índice de Obsolescencia",
+    "description": "Porcentaje de materiales marcados como obsoletos.",
+    "cypher": "MATCH (m:Material) WITH count(m) as total, sum(CASE WHEN m.status_flag IN ['X', 'OBS'] THEN 1 ELSE 0 END) as obs RETURN total as TOTAL_MATERIALES, obs as OBSOLETOS, round((toFloat(obs)/total)*100) as PORCENTAJE_RIESGO",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-percent"
+  },
+  {
+    "id": "G03",
+    "category": "Gestión",
+    "title": "Completitud de Datos",
+    "description": "Equipos que tienen el nombre informado.",
+    "cypher": "MATCH (e:Equipo) RETURN count(e) as TOTAL, sum(CASE WHEN e.name IS NOT NULL THEN 1 ELSE 0 END) as CON_NOMBRE",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-database"
+  },
+  {
+    "id": "G04",
+    "category": "Gestión",
+    "title": "Top Plantas Complejas",
+    "description": "Ubicaciones con mayor profundidad media de jerarquía.",
+    "cypher": "MATCH p=(u:UbicacionTecnica)-[:CONTIENE*]->(m:Material) RETURN u.name as PLANTA, avg(length(p)) as PROFUNDIDAD_PROMEDIO ORDER BY PROFUNDIDAD_PROMEDIO DESC LIMIT 5",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-layer-group"
+  },
+  {
+    "id": "G05",
+    "category": "Gestión",
+    "title": "Ratio Repuestos/Equipo",
+    "description": "Promedio de repuestos únicos por equipo.",
+    "cypher": "MATCH (e:Equipo) OPTIONAL MATCH (e)-[:CONTIENE*]->(m:Material) WITH e, count(DISTINCT m) as conteo RETURN avg(conteo) as PROMEDIO_PIEZAS_POR_EQUIPO",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-divide"
+  },
+  {
+    "id": "G06",
+    "category": "Gestión",
+    "title": "Equipos Críticos (Hotspots)",
+    "description": "Equipos con más conexiones directas.",
+    "cypher": "MATCH (e:Equipo)-[r]-() RETURN e.name as EQUIPO, count(r) as CONEXIONES ORDER BY CONEXIONES DESC LIMIT 10",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-bullseye"
+  },
+  {
+    "id": "G07",
+    "category": "Gestión",
+    "title": "KPI Estandarización",
+    "description": "Comparativa entre materiales únicos vs instalaciones totales.",
+    "cypher": "MATCH (m:Material) WITH count(DISTINCT m) as unicos MATCH ()-[r:CONTIENE]->(:Material) RETURN unicos as MATERIALES_UNICOS, count(r) as INSTALACIONES_TOTALES",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-ruler-combined"
+  },
+  {
+    "id": "G08",
+    "category": "Gestión",
+    "title": "Auditoría de Relaciones",
+    "description": "Verificar tipos de relaciones existentes.",
+    "cypher": "MATCH ()-[r]->() RETURN type(r) as TIPO_RELACION, count(r) as CANTIDAD",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-magnifying-glass"
+  },
+  {
+    "id": "G09",
+    "category": "Gestión",
+    "title": "Nodos Recientes",
+    "description": "Últimos nodos añadidos.",
+    "cypher": "MATCH (n) RETURN n.id, n.name, labels(n)[0] as TIPO ORDER BY n.id DESC LIMIT 10",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-clock"
+  },
+  {
+    "id": "G10",
+    "category": "Gestión",
+    "title": "Salud del Grafo",
+    "description": "Densidad de conexiones del grafo.",
+    "cypher": "MATCH (n) WITH count(n) as nodos MATCH ()-[r]->() RETURN nodos as NODOS, count(r) as ARISTAS, CASE WHEN nodos > 0 THEN toFloat(count(r))/nodos ELSE 0 END as DENSIDAD",
+    "needs_param": false,
+    "is_graph": false,
+    "icon": "fa-heart-pulse"
+  },
+
+{
+    "id": "N01",
+    "category": "Mantenimiento",
+    "title": "Equipos 'Hermanos' (Misma Área)",
+    "description": "Visualiza otros equipos que comparten la misma Ubicación Técnica padre que el seleccionado.",
+    "cypher": "MATCH (parent)-[:CONTIENE]->(target {id: $p}) MATCH (parent)-[:CONTIENE]->(sibling) WHERE sibling.id <> target.id MATCH path = (parent)-[:CONTIENE]->(sibling) UNWIND relationships(path) as r WITH startNode(r) as a, endNode(r) as b, r RETURN a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, b.name as B_LABEL, labels(b)[0] as B_TYPE, \"HERMANO\" as RELACION LIMIT 100",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-people-roof"
+  },
+  {
+    "id": "N02",
+    "category": "Mantenimiento",
+    "title": "Red de Co-ocurrencia (Basket Analysis)",
+    "description": "Muestra qué otros materiales se instalan frecuentemente junto al material seleccionado en el mismo equipo.",
+    "cypher": "MATCH (target:Material {id: $p})<-[:CONTIENE]-(e:Equipo)-[:CONTIENE]->(other:Material) WHERE target.id <> other.id RETURN target.id as A_ID, target.name as A_LABEL, \"Material\" as A_TYPE, other.id as B_ID, other.name as B_LABEL, \"Co-Material\" as B_TYPE, \"JUNTOS_EN_\" + e.id as RELACION LIMIT 100",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-basket-shopping"
+  },
+  {
+    "id": "N03",
+    "category": "Ingeniería",
+    "title": "Sub-Grafo Descendente (Proyecto)",
+    "description": "Visualiza la estructura completa (Equipos y Materiales) que cuelgan del nodo seleccionado.",
+    "cypher": "MATCH path = (root {id: $p})-[:CONTIENE*1..3]->(leaf) UNWIND relationships(path) as r WITH startNode(r) as a, endNode(r) as b, r RETURN DISTINCT a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, b.name as B_LABEL, labels(b)[0] as B_TYPE, \"CONTIENE\" as RELACION LIMIT 300",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-project-diagram"
+  },
+  {
+    "id": "N04",
+    "category": "Ingeniería",
+    "title": "Puentes entre Plantas",
+    "description": "Detecta si el material seleccionado conecta estructuras de plantas diferentes (recurso compartido).",
+    "cypher": "MATCH (m:Material {id: $p}) MATCH (u1:UbicacionTecnica)-[:CONTIENE*]->(e1:Equipo)-[:CONTIENE]->(m) MATCH (u2:UbicacionTecnica)-[:CONTIENE*]->(e2:Equipo)-[:CONTIENE]->(m) WHERE u1.id <> u2.id AND NOT (u1)-[:CONTIENE*]->(u2) AND NOT (u2)-[:CONTIENE*]->(u1) RETURN e1.id as A_ID, u1.name as A_LABEL, \"Origen 1\" as A_TYPE, m.id as B_ID, m.name as B_LABEL, \"Material Puente\" as B_TYPE, \"USA\" as RELACION UNION MATCH (m:Material {id: $p}) MATCH (u2:UbicacionTecnica)-[:CONTIENE*]->(e2:Equipo)-[:CONTIENE]->(m) WHERE exists((:UbicacionTecnica)-[:CONTIENE*]->(e2)) RETURN m.id as A_ID, m.name as A_LABEL, \"Material Puente\" as A_TYPE, e2.id as B_ID, u2.name as B_LABEL, \"Origen 2\" as B_TYPE, \"USADO_POR\" as RELACION LIMIT 50",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-bridge"
+  },
+  {
+    "id": "N05",
+    "category": "Calidad Datos",
+    "title": "Bucles Directos (Self-Loops)",
+    "description": "Visualiza errores de datos donde un nodo se contiene a sí mismo.",
+    "cypher": "MATCH (n)-[r:CONTIENE]->(n) RETURN n.id as A_ID, n.name as A_LABEL, labels(n)[0] as A_TYPE, n.id as B_ID, \"ERROR_BUCLE\" as B_LABEL, \"Error\" as B_TYPE, \"SE_CONTIENE\" as RELACION LIMIT 50",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-rotate-left"
+  },
+  {
+    "id": "N06",
+    "category": "Ingeniería",
+    "title": "Exploración de Vecindad (2 Saltos)",
+    "description": "Muestra todo lo que está conectado a 2 pasos de distancia (padres, hijos, nietos, abuelos).",
+    "cypher": "MATCH (center {id: $p})-[r1]-(n1)-[r2]-(n2) RETURN center.id as A_ID, center.name as A_LABEL, labels(center)[0] as A_TYPE, n1.id as B_ID, n1.name as B_LABEL, labels(n1)[0] as B_TYPE, type(r1) as RELACION UNION MATCH (center {id: $p})-[r1]-(n1)-[r2]-(n2) RETURN n1.id as A_ID, n1.name as A_LABEL, labels(n1)[0] as A_TYPE, n2.id as B_ID, n2.name as B_LABEL, labels(n2)[0] as B_TYPE, type(r2) as RELACION LIMIT 200",
+    "needs_param": true,
+    "is_graph": true,
+    "icon": "fa-bullseye"
+  },
+  {
+    "id": "N07",
+    "category": "Compras",
+    "title": "Cluster de Proveedores (Simulado)",
+    "description": "Agrupa materiales basándose en palabras clave comunes en sus nombres (ej. marcas).",
+    "cypher": "MATCH (m:Material) WHERE m.name CONTAINS ' ' WITH split(m.name, ' ')[0] as Brand, collect(m) as mats WHERE size(mats) > 2 AND size(Brand) > 3 UNWIND mats as m RETURN Brand as A_ID, Brand as A_LABEL, \"Posible Marca\" as A_TYPE, m.id as B_ID, m.name as B_LABEL, \"Material\" as B_TYPE, \"FABRICA\" as RELACION LIMIT 150",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-tags"
+  },
+  {
+    "id": "N08",
+    "category": "Mantenimiento",
+    "title": "Ruta Crítica de Fallo",
+    "description": "Muestra la cadena de equipos desde una Ubicación Técnica hasta un material crítico (precio > 1000).",
+    "cypher": "MATCH path = (u:UbicacionTecnica)-[:CONTIENE*]->(e:Equipo)-[:CONTIENE]->(m:Material) WHERE toFloat(replace(replace(m.price, '$', ''), '€', '')) > 1000 UNWIND relationships(path) as r WITH startNode(r) as a, endNode(r) as b RETURN a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, b.name as B_LABEL, labels(b)[0] as B_TYPE, \"CRITICO\" as RELACION LIMIT 100",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-fire-extinguisher"
+  },
+  {
+    "id": "N09",
+    "category": "Calidad Datos",
+    "title": "Nodos Huérfanos (Grafo)",
+    "description": "Visualización de nodos que no tienen ninguna relación (islas flotantes).",
+    "cypher": "MATCH (n) WHERE NOT (n)--() RETURN n.id as A_ID, n.name as A_LABEL, labels(n)[0] as A_TYPE, n.id as B_ID, \"AISLADO\" as B_LABEL, \"Aislado\" as B_TYPE, \"SIN_CONEXION\" as RELACION LIMIT 50",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-unlink"
+  },
+  {
+    "id": "N10",
+    "category": "Ingeniería",
+    "title": "Triangulación Estructural",
+    "description": "Detecta patrones triangulares (A conecta con B y C, y B conecta con C). Indica alta redundancia o complejidad.",
+    "cypher": "MATCH (a)-[:CONTIENE]->(b)-[:CONTIENE]->(c), (a)-[:CONTIENE]->(c) RETURN a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, b.id as B_ID, b.name as B_LABEL, labels(b)[0] as B_TYPE, \"RUTA_1\" as RELACION UNION MATCH (a)-[:CONTIENE]->(b)-[:CONTIENE]->(c), (a)-[:CONTIENE]->(c) RETURN a.id as A_ID, a.name as A_LABEL, labels(a)[0] as A_TYPE, c.id as B_ID, c.name as B_LABEL, labels(c)[0] as B_TYPE, \"RUTA_DIRECTA\" as RELACION LIMIT 100",
+    "needs_param": false,
+    "is_graph": true,
+    "icon": "fa-shapes"
+  }
+]
