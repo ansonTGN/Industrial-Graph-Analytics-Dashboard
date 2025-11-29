@@ -18,7 +18,7 @@
 El sistema está optimizado para entornos de ingeniería, ofreciendo renderizado de grafos en tiempo real, análisis de listas de materiales (BOM) y detección de patrones logísticos.
 
 ### ✨ Características Principales
-*   **🚀 Backend en Rust:** Latencia ultrabaixa y gestión segura de concurrencia.
+*   **🚀 Backend en Rust:** Latencia ultrabaja y gestión segura de concurrencia.
 *   **🕸 Visualización Interactiva:** Motor gráfico basado en `Vis.js`.
 *   **📊 Analítica Modular:** Sistema de consultas dinámico cargado desde `queries.json`.
 *   **📈 Gráficos Automáticos:** Histogramas estadísticos con `Chart.js`.
