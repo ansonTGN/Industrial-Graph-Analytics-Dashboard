@@ -17,6 +17,13 @@
 
 El sistema está optimizado para entornos de ingeniería, ofreciendo renderizado de grafos en tiempo real, análisis de listas de materiales (BOM) y detección de patrones logísticos.
 
+<!-- GALERÍA DE IMÁGENES -->
+<div align="center">
+<img src="IMG/APP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+<img src="IMG/APP-01.png" width="48%" alt="Dashboard Graph View" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+<p><em>Dashboard Views: Login & Interactive Graph Explorer</em></p>
+</div>
+
 ### ✨ Características Principales
 *   **🚀 Backend en Rust:** Latencia ultrabaja y gestión segura de concurrencia.
 *   **🕸 Visualización Interactiva:** Motor gráfico basado en `Vis.js`.
