@@ -285,18 +285,20 @@ async fn execute_query(data: web::Data<AppState>, form: web::Form<QueryParams>) 
 async fn main() -> std::io::Result<()> {
     dotenv().ok(); 
     let tera = Tera::new("templates/**/*").expect("Error cargando templates");
-    
-    // Cargar queries del JSON al inicio
     let loaded_queries = load_queries_from_file();
 
     let app_state = web::Data::new(AppState {
         graph: Mutex::new(None),
         db_host: Mutex::new(String::new()),
         tera,
-        queries: loaded_queries, // Inyectamos las queries en el estado
+        queries: loaded_queries,
     });
     
-    println!("🚀 SERVIDOR INICIADO EN: http://0.0.0.0:8081");
+    // OBTENER PUERTO DINÁMICO (O USAR 8081 SI ES LOCAL)
+    let port_str = env::var("PORT").unwrap_or_else(|_| "8081".to_string());
+    let port = port_str.parse::<u16>().expect("PORT debe ser un número");
+
+    println!("🚀 SERVIDOR INICIADO EN: 0.0.0.0:{}", port);
     
     HttpServer::new(move || {
         App::new()
@@ -306,8 +308,10 @@ async fn main() -> std::io::Result<()> {
             .route("/dashboard", web::get().to(dashboard))
             .route("/query", web::post().to(execute_query))
             .route("/api/search", web::get().to(search_nodes))
+            // IMPORTANTE: Servir archivos estáticos si tienes CSS/JS locales
+            // .service(actix_files::Files::new("/static", "./static")) 
     })
-    .bind(("0.0.0.0", 8081))?
+    .bind(("0.0.0.0", port))? // Usar la variable port
     .run()
     .await
 }
