@@ -11,9 +11,10 @@ Aquí tienes el `README.md` completo y actualizado. He añadido una sección vis
 
 <!-- GALERÍA DE IMÁGENES -->
 <div align="center">
-  <img src="IMG/AAP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-  <img src="IMG/AAP-01.png" width="48%" alt="Dashboard Graph View" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-  <p><em>Dashboard Views: Login & Interactive Graph Explorer</em></p>
+  <img src="https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard/blob/main/IMG/AAP-00.png?raw=true" width="48%" alt="Vista Grafo Interactivo" style="border-radius: 8px; margin-right: 5px;">
+  <img src="https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard/blob/main/IMG/AAP-01.png?raw=true" width="48%" alt="Vista Tabular de Datos" style="border-radius: 8px; margin-left: 5px;">
+  <br>
+  <p><em>Dashboard Views: Interactive Graph Explorer & Data Grid</em></p>
 </div>
 
 ---
