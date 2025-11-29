@@ -1,4 +1,4 @@
-# 🏭 Neo4j Industrial Graph Analytics
+# Neo4j Industrial Graph Analytics
 
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust)
 ![Neo4j](https://img.shields.io/badge/Neo4j-Database-blue?logo=neo4j)
