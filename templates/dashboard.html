@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%);">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <i class="fa-solid fa-network-wired text-info"></i> 
+            <div>
+                <div class="lh-1 fw-bold font-monospace">NEO4J ANALYTICS</div>
+                <div style="font-size: 0.65rem; opacity: 0.7; letter-spacing: 1px;">PETROCHEM SYSTEMS</div>
+            </div>
+        </a>
+        <div class="d-none d-lg-flex align-items-center bg-black bg-opacity-25 px-3 py-1 rounded-pill border border-secondary border-opacity-25">
+            <span class="d-flex align-items-center text-light small fw-bold font-monospace">
+                <i class="fa-solid fa-circle text-success me-2" style="font-size: 0.5rem; box-shadow: 0 0 8px #2ecc71;"></i>
+                {{ db_host | default(value="Conectado") }}
+            </span>
+        </div>
+        <a href="/" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-0" style="line-height: 28px;">
+            <i class="fa-solid fa-power-off me-2"></i>Salir
+        </a>
+    </div>
+</nav>
+
+<div class="container-fluid h-100 overflow-hidden" style="height: calc(100vh - 56px);">
+    <div class="row h-100">
+        <!-- SIDEBAR -->
+        <div class="col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm" style="z-index: 2;">
+            <div class="p-3 bg-light border-bottom">
+                <h6 class="mb-0 fw-bold text-uppercase text-secondary small"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h6>
+            </div>
+            
+            <div class="flex-grow-1 overflow-auto p-3" style="background-color: #f8f9fa;">
+                <form action="/query" method="post" id="queryForm">
+                    
+                    <div class="mb-4 bg-white p-3 rounded shadow-sm border">
+                        <label class="form-label fw-bold small text-dark d-flex justify-content-between">OBJETO OBJETIVO <i class="fa-solid fa-magnifying-glass text-muted"></i></label>
+                        <select id="select-param" name="param" autocomplete="off">
+                            {% if current_param %}
+                                <option value="{{ current_param }}" selected>{{ current_param_label }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <label class="form-label fw-bold small text-dark mb-2 px-1">CONSULTAS DISPONIBLES</label>
+                    <div class="accordion accordion-flush shadow-sm rounded border overflow-hidden" id="queriesAccordion">
+                        {% for category, queries in categorized_queries %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                <button class="accordion-button collapsed fw-bold py-2 bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" style="font-size: 0.85rem; color: #34495e;">
+                                    <i class="fa-solid fa-folder me-2 text-primary opacity-50"></i> {{ category }}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto rounded-pill" style="font-size: 0.65rem;">{{ queries | length }}</span>
+                                </button>
+                            </h2>
+                            <!-- SE HA SIMPLIFICADO EL ACCORDION-COLLAPSE PARA EVITAR ERRORES DE SINTAXIS -->
+                            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#queriesAccordion">
+                                <div class="accordion-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        {% for q in queries %}
+                                        <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2 ps-4" style="font-size: 0.8rem; cursor: pointer;">
+                                            <input class="form-check-input flex-shrink-0" type="radio" name="query_id" value="{{ q.id }}" {% if current_query == q.id %}checked{% endif %} required>
+                                            <div class="w-100" title="{{ q.description }}">
+                                                <i class="fa-solid {{ q.icon }} me-1 opacity-50" style="width: 15px;"></i> {{ q.title }}
+                                            </div>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid mt-4 sticky-bottom pb-2">
+                        <button type="submit" class="btn btn-primary fw-bold shadow py-2"><i class="fa-solid fa-bolt me-2"></i> EJECUTAR</button>
+                    </div>
+                </form>
+                
+                {% if error %}
+                <div class="alert alert-danger mt-3 small shadow-sm border-0">{{ error }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div class="col-lg-9 h-100 p-0 overflow-hidden bg-light d-flex flex-column">
+            {% if results %}
+            <div class="bg-white px-4 py-3 border-bottom d-flex justify-content-between align-items-center shadow-sm" style="z-index: 1;">
+                <div>
+                    <h5 class="mb-0 fw-bold text-primary">{{ results.query_title }}</h5>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ results.rows | length }} registros | {{ results.timestamp }}</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="downloadGraphPNG()">Captura</button>
+                    <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportCSV()">CSV</button>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 overflow-hidden d-flex flex-column p-4">
+                <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="card-header bg-light border-bottom-0 p-2">
+                        <ul class="nav nav-pills nav-fill gap-2" id="resultTabs" role="tablist">
+                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane">Vista Grafo</button></li>
+                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane">Vista Datos</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold small" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane">Estadísticas</button></li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body p-0 overflow-hidden position-relative">
+                        <div class="tab-content h-100">
+                            <div class="tab-pane fade {% if results.is_graph %}show active{% endif %} h-100 p-0" id="graph-pane">
+                                <div id="network-container" class="w-100 h-100 bg-white"></div>
+                            </div>
+                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100" id="table-pane">
+                                <div class="table-responsive h-100">
+                                    <table class="table table-hover table-striped table-sm mb-0 align-middle small">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                {% for col in results.columns %}<th>{{ col }}</th>{% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in results.rows %}
+                                            <tr>
+                                                {% for col in results.columns %}<td>{{ row[col] }}</td>{% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade h-100 p-4" id="chart-pane">
+                                <div style="height: 80%; width: 100%;"><canvas id="mainChart"></canvas></div>
+                                <p class="text-center text-muted small mt-3" id="chart-msg"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50">
+                <i class="fa-solid fa-magnifying-glass-chart fa-6x mb-3"></i>
+                <h4 class="fw-light">Seleccione una consulta</h4>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="nodeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-2"><h6 class="modal-title fw-bold">Detalle</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body text-center">
+                <h6 id="modalTitle" class="fw-bold mb-1"></h6>
+                <span id="modalType" class="badge bg-secondary mb-3"></span>
+                <div class="d-grid"><button class="btn btn-outline-primary btn-sm" onclick="setFocusParam()">Filtrar por esto</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let tomSelectInstance;
+    document.addEventListener("DOMContentLoaded", function(){
+        tomSelectInstance = new TomSelect("#select-param", {
+            valueField: 'id', labelField: 'title', searchField: ['title', 'id'], preload: 'focus',
+            load: function(query, callback) {
+                fetch('/api/search?q=' + encodeURIComponent(query || '')).then(r => r.json()).then(json => callback(json)).catch(() => callback());
+            }
+        });
+        
+        // AUTO-EXPANDIR ACORDEON SELECCIONADO (Lógica movida al JS)
+        {% if current_query %}
+            const activeRadio = document.querySelector('input[name="query_id"][value="{{ current_query }}"]');
+            if(activeRadio) {
+                const collapseDiv = activeRadio.closest('.accordion-collapse');
+                if(collapseDiv) new bootstrap.Collapse(collapseDiv, { toggle: true });
+            }
+        {% endif %}
+    });
+
+    let network = null;
+    let nodesDataSet, edgesDataSet;
+
+    {% if results %}
+        const rows = {{ results.rows | json_encode() | safe }};
+        const cols = {{ results.columns | json_encode() | safe }};
+        const hasGraphData = cols.includes('A_ID') && cols.includes('B_ID');
+
+        if (hasGraphData && {{ results.is_graph | json_encode() }}) initGraph(rows);
+        else if (hasGraphData) document.getElementById('network-container').innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center text-muted">Vista tabular preferida.</div>';
+        else document.getElementById('network-container').innerHTML = '<div class="d-flex h-100 align-items-center justify-content-center text-muted">Datos no gráficos.</div>';
+
+        const numericCol = cols.find(c => ['CANTIDAD', 'TOTAL', 'SCORE', 'VECES', 'PRECIO'].some(k => c.includes(k)));
+        const labelCol = cols.find(c => ['DESCRIPCION', 'NAME', 'EQUIPO', 'MATERIAL'].includes(c)) || cols[0];
+
+        if (numericCol && rows.length > 0) {
+            new Chart(document.getElementById('mainChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: rows.map(r => r[labelCol].substring(0,20)),
+                    datasets: [{ label: numericCol, data: rows.map(r => parseFloat(r[numericCol]) || 0), backgroundColor: '#3498db' }]
+                }, options: { maintainAspectRatio: false }
+            });
+        } else document.getElementById('chart-msg').innerText = "Sin datos numéricos.";
+
+        function initGraph(data) {
+            const container = document.getElementById('network-container');
+            const nodesMap = new Map();
+            const edgesArr = [];
+            data.forEach((row) => {
+                if (row.A_ID && !nodesMap.has(row.A_ID)) nodesMap.set(row.A_ID, {id:row.A_ID, label:row.A_LABEL, group:row.A_TYPE});
+                if (row.B_ID && !nodesMap.has(row.B_ID)) nodesMap.set(row.B_ID, {id:row.B_ID, label:row.B_LABEL, group:row.B_TYPE});
+                if (row.A_ID && row.B_ID) edgesArr.push({from:row.A_ID, to:row.B_ID, label:row.RELACION});
+            });
+            nodesDataSet = new vis.DataSet(Array.from(nodesMap.values()));
+            edgesDataSet = new vis.DataSet(edgesArr);
+            network = new vis.Network(container, { nodes: nodesDataSet, edges: edgesDataSet }, { 
+                nodes: { shape: 'dot' }, 
+                groups: { Material:{color:'#f1c40f'}, Equipo:{color:'#3498db'}, UbicacionTecnica:{color:'#2ecc71'} }
+            });
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    let n = nodesDataSet.get(params.nodes[0]);
+                    document.getElementById('modalTitle').innerText = n.label;
+                    document.getElementById('modalType').innerText = n.group;
+                    selectedNodeId = n.id;
+                    new bootstrap.Modal(document.getElementById('nodeModal')).show();
+                }
+            });
+        }
+        let selectedNodeId = null;
+        function setFocusParam() {
+            if(tomSelectInstance && selectedNodeId) {
+                tomSelectInstance.addOption({id: selectedNodeId, title: document.getElementById('modalTitle').innerText});
+                tomSelectInstance.setValue(selectedNodeId);
+                bootstrap.Modal.getInstance(document.getElementById('nodeModal')).hide();
+            }
+        }
+        function downloadGraphPNG() { network.fit({animation:false}); setTimeout(() => { 
+            let a = document.createElement('a'); a.download = 'grafo.png'; a.href = document.getElementById('network-container').getElementsByTagName('canvas')[0].toDataURL(); a.click(); 
+        }, 500); }
+        function exportCSV() {
+            let csv = cols.join(",") + "\n"; rows.forEach(r => csv += cols.map(c => `"${(r[c]||'').replace(/"/g,'""')}"`).join(",") + "\n");
+            let a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = 'datos.csv'; a.click();
+        }
+    {% endif %}
+</script>
+{% endblock %}

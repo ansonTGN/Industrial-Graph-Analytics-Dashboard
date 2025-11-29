@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Acceso Seguro - Graph Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center min-vh-100" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                
+                <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                    <div class="card-header bg-primary text-white text-center py-4 border-0">
+                        <i class="fa-solid fa-network-wired fa-3x mb-2 text-white-50"></i>
+                        <h3 class="fw-bold mb-0">Graph Analytics</h3>
+                        <p class="small opacity-75 mb-0">Plataforma de Ingeniería</p>
+                    </div>
+                    
+                    <div class="card-body p-4 bg-white">
+                        
+                        <!-- Selectores de Perfil -->
+                        <div class="d-flex gap-2 mb-4">
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="btnLocal" onclick="setProfile('local')">
+                                <i class="fa-solid fa-server me-1"></i> Local
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm flex-fill" id="btnCloud" onclick="setProfile('cloud')">
+                                <i class="fa-solid fa-cloud me-1"></i> Aura Cloud
+                            </button>
+                        </div>
+
+                        {% if error %}
+                            <div class="alert alert-danger d-flex align-items-center small rounded-3" role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                                <div>{{ error }}</div>
+                            </div>
+                        {% endif %}
+
+                        <form action="/connect" method="post" id="loginForm">
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small fw-bold text-uppercase">Conexión URI</label>
+                                <!-- Valor por defecto desde ENV -->
+                                <input type="text" name="uri" id="uriInput" class="form-control form-control-lg bg-light fs-6" 
+                                       value="{{ env_uri }}" required>
+                                <div class="form-text small text-muted" id="uriHelp">Host de la base de datos</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small fw-bold text-uppercase">Usuario</label>
+                                <input type="text" name="user" id="userInput" class="form-control form-control-lg bg-light fs-6" value="{{ env_user }}" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label text-secondary small fw-bold text-uppercase">Contraseña</label>
+                                <input type="password" name="pass" id="passInput" class="form-control form-control-lg bg-light fs-6" placeholder="••••••••" value="{{ env_pass }}">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow transition-hover">
+                                <i class="fa-solid fa-plug me-2"></i> CONECTAR BASE DE DATOS
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-footer bg-light text-center py-3">
+                         <small class="text-muted">Author: <strong>Angel A. Urbina</strong></small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setProfile(type) {
+        const uriInput = document.getElementById('uriInput');
+        const userInput = document.getElementById('userInput');
+        const passInput = document.getElementById('passInput');
+        const helpText = document.getElementById('uriHelp');
+        const btnLocal = document.getElementById('btnLocal');
+        const btnCloud = document.getElementById('btnCloud');
+
+        if (type === 'local') {
+            uriInput.value = 'bolt://localhost:7687';
+            userInput.value = 'neo4j';
+            // No reseteamos la pass para no borrar la del ENV si el usuario solo quería resetear la URI
+            helpText.innerText = 'Conexión por defecto (Docker/Local)';
+            btnLocal.classList.add('active', 'btn-secondary');
+            btnLocal.classList.remove('btn-outline-secondary');
+            btnCloud.classList.remove('active', 'btn-info');
+            btnCloud.classList.add('btn-outline-info');
+        } else {
+            uriInput.value = 'neo4j+s://xxxxxxxx.databases.neo4j.io';
+            helpText.innerText = 'Requiere URI segura (SSL)';
+            btnLocal.classList.remove('active', 'btn-secondary');
+            btnLocal.classList.add('btn-outline-secondary');
+            btnCloud.classList.add('active', 'btn-info');
+            btnCloud.classList.remove('btn-outline-info');
+        }
+    }
+</script>
+{% endblock %}
