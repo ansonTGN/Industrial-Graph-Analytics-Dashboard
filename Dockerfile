@@ -1,7 +1,8 @@
 # ---------------------------------------------------
 # 1. Etapa de Construcción (Builder)
 # ---------------------------------------------------
-FROM rust:1.75-slim-bookworm as builder
+# CAMBIO IMPORTANTE: Usamos 'rust:1-slim-bookworm' para obtener la última versión estable (ej. 1.80+)
+FROM rust:1-slim-bookworm as builder
 
 # Instalar dependencias del sistema necesarias para compilar (OpenSSL para neo4rs)
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
@@ -23,15 +24,14 @@ RUN apt-get update && apt-get install -y ca-certificates libssl-dev && rm -rf /v
 WORKDIR /app
 
 # Copiar el binario compilado
+# Asegúrate que "neo4j_dashboard" coincide con el name en tu Cargo.toml
 COPY --from=builder /app/target/release/neo4j_dashboard ./server
 
-# CRUCIAL: Copiar los archivos que tu app lee en tiempo de ejecución
+# Copiar archivos estáticos y configuración
 COPY --from=builder /app/queries.json ./queries.json
 COPY --from=builder /app/templates ./templates
-# Si tuvieras una carpeta static o assets, cópiala también:
-# COPY --from=builder /app/static ./static
 
-# Render asignará el puerto automáticamente en la variable PORT
+# Render usa la variable PORT
 ENV PORT=8080 
 EXPOSE 8080
 
