@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Industrial Graph Analytics{% endblock %}</title>
     
     <!-- Bootstrap 5 CSS -->
@@ -18,30 +18,40 @@
 
     <style>
         :root { --primary-color: #2c3e50; --accent-color: #3498db; --bg-color: #f8f9fa; }
-        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: #333; }
-        h1, h2, h3, h4, h5 { font-weight: 700; color: var(--primary-color); }
-        .font-monospace { font-family: 'Roboto Mono', monospace; }
         
-        /* MEJORA VISUALIZACIÓN GRAFO: Ocupar 100% absoluto dentro del contenedor relativo */
+        /* Fix para altura real en móviles (evita que la barra de url tape contenido) */
+        html, body { 
+            height: 100%; 
+            height: 100dvh; 
+            overflow: hidden; /* App-like feel */
+        }
+        
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: #333; }
+        
+        /* Contenedor del grafo */
         #network-container { 
             width: 100%; 
             height: 100%; 
             background-color: #fcfcfc; 
             background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
             background-size: 20px 20px;
-            position: absolute;
-            top: 0;
-            left: 0;
+            /* Importante: relative para que los hijos absolutos se posicionen bien */
+            position: relative; 
         }
 
         #loading { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; }
         
-        /* Ajuste para punteros en tablas */
         .cursor-pointer { cursor: pointer; }
         .hover-target:hover { background-color: rgba(52, 152, 219, 0.1); color: var(--accent-color); font-weight: bold; }
+
+        /* Ajustes específicos para móvil en el sidebar */
+        .sidebar-mobile-overlay {
+            width: 85%;
+            max-width: 350px;
+        }
     </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column">
 
     <div id="loading">
         <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
@@ -58,7 +68,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('form').forEach(f => {
-                f.addEventListener('submit', () => document.getElementById('loading').style.display = 'flex');
+                f.addEventListener('submit', () => {
+                    // Cerrar offcanvas si está abierto en móvil al enviar
+                    const offcanvasEl = document.querySelector('.offcanvas.show');
+                    if(offcanvasEl) {
+                        const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                        if(bsOffcanvas) bsOffcanvas.hide();
+                    }
+                    document.getElementById('loading').style.display = 'flex';
+                });
             });
         });
     </script>

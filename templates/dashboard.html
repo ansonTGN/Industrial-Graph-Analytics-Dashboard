@@ -1,61 +1,70 @@
 {% extends "base.html" %}
 
 {% block content %}
-<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); flex-shrink: 0;">
-    <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark shadow-sm flex-shrink-0" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); z-index: 1040;">
+    <div class="container-fluid px-3">
+        <!-- Botón Toggle para Móvil -->
+        <button class="btn btn-outline-light border-0 d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+            <i class="fa-solid fa-bars fa-lg"></i>
+        </button>
+
+        <a class="navbar-brand d-flex align-items-center gap-2 me-auto" href="#">
             <i class="fa-solid fa-network-wired text-info"></i> 
-            <div>
-                <div class="lh-1 fw-bold font-monospace">NEO4J ANALYTICS</div>
-                <div style="font-size: 0.65rem; opacity: 0.7; letter-spacing: 1px;">PETROCHEM SYSTEMS</div>
+            <div class="d-flex flex-column">
+                <span class="lh-1 fw-bold font-monospace fs-6">NEO4J ANALYTICS</span>
+                <span style="font-size: 0.6rem; opacity: 0.7; letter-spacing: 1px;">PETROCHEM SYSTEMS</span>
             </div>
         </a>
-        <!-- NUEVO: BOTÓN DE TOGGLE PARA EL SIDEBAR EN MÓVIL -->
-        <button class="btn btn-outline-light d-lg-none me-auto" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse" aria-expanded="false" aria-controls="sidebarCollapse">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-        <div class="d-none d-lg-flex align-items-center bg-black bg-opacity-25 px-3 py-1 rounded-pill border border-secondary border-opacity-25">
+
+        <div class="d-none d-md-flex align-items-center bg-black bg-opacity-25 px-3 py-1 rounded-pill border border-secondary border-opacity-25 me-3">
             <span class="d-flex align-items-center text-light small fw-bold font-monospace">
                 <i class="fa-solid fa-circle text-success me-2" style="font-size: 0.5rem; box-shadow: 0 0 8px #2ecc71;"></i>
                 {{ db_host | default(value="Conectado") }}
             </span>
         </div>
-        <a href="/" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-0" style="line-height: 28px;">
-            <i class="fa-solid fa-power-off me-2"></i>Salir
+        <a href="/" class="btn btn-danger btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Salir">
+            <i class="fa-solid fa-power-off"></i>
         </a>
     </div>
 </nav>
 
-<!-- ESTRUCTURA FLEX PARA OCUPAR TODA LA PANTALLA -->
-<div class="container-fluid d-flex flex-column overflow-hidden" style="height: calc(100vh - 56px);">
-    <!-- ELIMINAR flex-nowrap -->
-    <div class="row h-100">
-        <!-- SIDEBAR -->
-        <!-- CAMBIO: col-12 para móvil, collapse d-lg-block para ocultar/mostrar -->
-        <div class="col-12 col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm collapse d-lg-block" id="sidebarCollapse" style="z-index: 2; max-width: 400px;">
-            <div class="p-3 bg-light border-bottom flex-shrink-0">
-                <h6 class="mb-0 fw-bold text-uppercase text-secondary small"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h6>
-            </div>
-            
-            <div class="flex-grow-1 overflow-auto p-3" style="background-color: #f8f9fa;">
+<!-- LAYOUT PRINCIPAL -->
+<div class="d-flex flex-grow-1 overflow-hidden position-relative">
+    
+    <!-- SIDEBAR (Offcanvas en móvil, Columna en Desktop) -->
+    <div class="offcanvas-lg offcanvas-start bg-light border-end d-flex flex-column flex-shrink-0 shadow-sm" 
+         tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" 
+         style="width: 350px; max-width: 85vw;">
+        
+        <div class="offcanvas-header border-bottom bg-white">
+            <h6 class="offcanvas-title fw-bold text-uppercase text-secondary" id="sidebarMenuLabel">
+                <i class="fa-solid fa-sliders me-2"></i>Panel de Control
+            </h6>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+        </div>
+        
+        <div class="offcanvas-body p-0 d-flex flex-column flex-grow-1 overflow-hidden bg-light">
+            <div class="flex-grow-1 overflow-auto p-3">
                 <form action="/query" method="post" id="queryForm">
-                    
-                    <div class="mb-4 bg-white p-3 rounded shadow-sm border">
-                        <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                    <!-- Selector de Objetivo -->
+                    <div class="mb-3 bg-white p-3 rounded shadow-sm border">
+                        <label class="form-label fw-bold small text-dark d-flex justify-content-between align-items-center">
                             OBJETO OBJETIVO 
-                            <span class="badge bg-info text-dark" id="target-badge" style="display:none;">Seleccionado</span>
+                            <span class="badge bg-info text-dark" id="target-badge" style="display:none;">¡Set!</span>
                         </label>
                         <select id="select-param" name="param" autocomplete="off" placeholder="Buscar ID o Nombre...">
                             {% if current_param %}
                                 <option value="{{ current_param }}" selected>{{ current_param_label }}</option>
                             {% endif %}
                         </select>
-                        <div class="form-text small mt-1 text-muted fst-italic">
-                            <i class="fa-solid fa-circle-info me-1"></i>Selecciona un nodo del grafo o tabla para rellenar esto.
+                        <div class="form-text small mt-1 text-muted fst-italic" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-circle-info me-1"></i>Selecciona un nodo del grafo o tabla.
                         </div>
                     </div>
 
-                    <label class="form-label fw-bold small text-dark mb-2 px-1">CONSULTAS DISPONIBLES</label>
+                    <!-- Acordeón de Consultas -->
+                    <label class="form-label fw-bold small text-dark mb-2 px-1">BIBLIOTECA DE CONSULTAS</label>
                     <div class="accordion accordion-flush shadow-sm rounded border overflow-hidden" id="queriesAccordion">
                         {% for category, queries in categorized_queries %}
                         <div class="accordion-item">
@@ -71,8 +80,8 @@
                                         {% for q in queries %}
                                         <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2 ps-4" style="font-size: 0.8rem; cursor: pointer;">
                                             <input class="form-check-input flex-shrink-0" type="radio" name="query_id" value="{{ q.id }}" {% if current_query == q.id %}checked{% endif %} required>
-                                            <div class="w-100" title="{{ q.description }}">
-                                                <i class="fa-solid {{ q.icon }} me-1 opacity-50" style="width: 15px;"></i> {{ q.title }}
+                                            <div class="w-100 lh-sm" title="{{ q.description }}">
+                                                <i class="fa-solid {{ q.icon }} me-1 opacity-50 text-center" style="width: 15px;"></i> {{ q.title }}
                                             </div>
                                         </label>
                                         {% endfor %}
@@ -82,171 +91,164 @@
                         </div>
                         {% endfor %}
                     </div>
-
-                    <div class="d-grid mt-4 pb-4">
-                        <button type="submit" class="btn btn-primary fw-bold shadow py-2"><i class="fa-solid fa-bolt me-2"></i> EJECUTAR</button>
-                    </div>
                 </form>
-                
+            </div>
+            
+            <!-- Footer fijo del Sidebar -->
+            <div class="p-3 border-top bg-white flex-shrink-0">
+                <button type="submit" form="queryForm" class="btn btn-primary w-100 fw-bold shadow-sm py-2">
+                    <i class="fa-solid fa-bolt me-2"></i> EJECUTAR
+                </button>
                 {% if error %}
-                <div class="alert alert-danger mt-3 small shadow-sm border-0">{{ error }}</div>
+                <div class="alert alert-danger mt-2 mb-0 py-1 px-2 small shadow-sm border-0 text-center lh-sm">{{ error }}</div>
                 {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- MAIN CONTENT -->
-        <!-- CAMBIO: col-12 para móvil -->
-        <div class="col-12 col-lg-9 h-100 p-0 flex-grow-1 d-flex flex-column position-relative">
-            {% if results %}
-            <!-- Header Resultados -->
-            <div class="bg-white px-4 py-3 border-bottom d-flex justify-content-between align-items-center shadow-sm flex-shrink-0" style="z-index: 10;">
-                <div>
-                    <h5 class="mb-0 fw-bold text-primary">{{ results.query_title }}</h5>
-                    <div class="text-muted" style="font-size: 0.75rem;">
-                        <i class="fa-regular fa-clock me-1"></i>{{ results.timestamp }} 
-                        <span class="mx-2">|</span> 
-                        <i class="fa-solid fa-table-list me-1"></i>{{ results.rows | length }} resultados
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera me-1"></i> Captura</button>
-                    <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="flex-grow-1 d-flex flex-column min-w-0 bg-white position-relative">
+        {% if results %}
+        <!-- Header Resultados -->
+        <div class="bg-white px-3 py-2 border-bottom d-flex justify-content-between align-items-center shadow-sm z-2">
+            <div class="overflow-hidden me-2">
+                <h6 class="mb-0 fw-bold text-primary text-truncate">{{ results.query_title }}</h6>
+                <div class="text-muted text-truncate" style="font-size: 0.7rem;">
+                    <i class="fa-regular fa-clock me-1"></i>{{ results.timestamp }} 
+                    <span class="d-none d-sm-inline">| <i class="fa-solid fa-table-list me-1"></i>{{ results.rows | length }} filas</span>
                 </div>
             </div>
-
-            <!-- Area de Contenido (Tabs + Vista) -->
-            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
-                <div class="card h-100 border-0 rounded-0 d-flex flex-column">
-                    <div class="card-header bg-light border-bottom p-2 flex-shrink-0">
-                        <ul class="nav nav-pills nav-fill gap-2" id="resultTabs" role="tablist">
-                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane"><i class="fa-solid fa-circle-nodes me-2"></i>Vista Grafo</button></li>
-                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane"><i class="fa-solid fa-table me-2"></i>Vista Datos</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold small" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane"><i class="fa-solid fa-chart-simple me-2"></i>Estadísticas</button></li>
-                        </ul>
-                    </div>
-
-                    <div class="card-body p-0 position-relative flex-grow-1 overflow-hidden" style="background: #fcfcfc;">
-                        <div class="tab-content h-100 w-100">
-                            
-                            <!-- PANE GRAFO -->
-                            <div class="tab-pane fade {% if results.is_graph %}show active{% endif %} h-100 w-100 position-relative" id="graph-pane">
-                                <!-- El contenedor del grafo está en base.html con CSS position:absolute -->
-                                <div id="network-container"></div>
-                                
-                                <!-- Controles Zoom -->
-                                <div class="position-absolute bottom-0 start-0 m-3 btn-group-vertical shadow-sm" style="z-index: 10;">
-                                    <button class="btn btn-light border btn-sm" onclick="network.moveTo({scale: 1.5})"><i class="fa-solid fa-plus"></i></button>
-                                    <button class="btn btn-light border btn-sm" onclick="network.fit()"><i class="fa-solid fa-compress"></i></button>
-                                    <button class="btn btn-light border btn-sm" onclick="network.moveTo({scale: 0.5})"><i class="fa-solid fa-minus"></i></button>
-                                </div>
-
-                                <!-- Leyenda Flotante -->
-                                <div class="position-absolute bottom-0 end-0 m-3 p-2 bg-white bg-opacity-90 rounded shadow-sm border small" style="pointer-events: none; z-index: 10;">
-                                    <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-warning"></i> Material</span>
-                                    <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-primary"></i> Equipo</span>
-                                    <span class="badge rounded-pill text-bg-light border text-dark"><i class="fa-solid fa-circle text-success"></i> Ubicación</span>
-                                </div>
-                            </div>
-
-                            <!-- PANE TABLA -->
-                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 overflow-auto" id="table-pane">
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-striped table-sm mb-0 align-middle small table-bordered">
-                                        <thead class="table-dark sticky-top">
-                                            <tr>
-                                                <th class="text-center bg-secondary" style="width: 50px;">#</th>
-                                                {% for col in results.columns %}
-                                                <th class="text-uppercase">{{ col }}</th>
-                                                {% endfor %}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for row in results.rows %}
-                                            <tr>
-                                                <td class="text-center text-muted">{{ loop.index }}</td>
-                                                {% for col in results.columns %}
-                                                <td>
-                                                    {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col or "CODIGO" in col %}
-                                                        {% if row[col] != "-" and "Lista" not in row[col] %}
-                                                        <div class="d-flex justify-content-between align-items-center hover-target p-1 rounded transition">
-                                                            <span class="fw-bold font-monospace text-dark">{{ row[col] }}</span>
-                                                            <button class="btn btn-link btn-sm p-0 ms-2 text-decoration-none" 
-                                                                    onclick="updateSearchParam('{{ row[col] }}', '{{ row[col] }} ({{ col }})')" 
-                                                                    title="Usar como objetivo">
-                                                                <i class="fa-solid fa-crosshairs text-primary"></i>
-                                                            </button>
-                                                        </div>
-                                                        {% else %}
-                                                            {{ row[col] }}
-                                                        {% endif %}
-                                                    {% else %}
-                                                        {{ row[col] }}
-                                                    {% endif %}
-                                                </td>
-                                                {% endfor %}
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- PANE CHART -->
-                            <div class="tab-pane fade h-100 w-100 p-4 overflow-hidden" id="chart-pane">
-                                <div class="d-flex flex-column h-100">
-                                    <h6 class="text-center text-secondary text-uppercase fw-bold mb-3" id="chart-title">Análisis de Datos</h6>
-                                    <div style="flex-grow: 1; position: relative; width: 100%;">
-                                        <canvas id="mainChart"></canvas>
-                                    </div>
-                                    <p class="text-center text-muted small mt-2" id="chart-msg"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="btn-group btn-group-sm flex-shrink-0">
+                <button class="btn btn-outline-secondary" onclick="downloadGraphPNG()" title="Captura"><i class="fa-solid fa-camera"></i></button>
+                <button class="btn btn-outline-secondary" onclick="exportCSV()" title="CSV"><i class="fa-solid fa-file-csv"></i></button>
             </div>
-            {% else %}
-            <!-- Estado vacío -->
-            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50 bg-light">
-                <div class="bg-white p-5 rounded-circle shadow-sm mb-4">
-                    <i class="fa-solid fa-magnifying-glass-chart fa-4x text-primary opacity-50"></i>
-                </div>
-                <h3 class="fw-bold text-dark">Esperando Consulta</h3>
-                <p>Seleccione una consulta del panel izquierdo para comenzar.</p>
-            </div>
-            {% endif %}
         </div>
+
+        <!-- Tabs y Vistas -->
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden position-relative">
+            <!-- Tabs Navigation -->
+            <ul class="nav nav-tabs nav-fill bg-light border-bottom flex-shrink-0" id="resultTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link py-2 {% if results.is_graph %}active{% endif %} small" data-bs-toggle="tab" data-bs-target="#graph-pane"><i class="fa-solid fa-circle-nodes"></i> Grafo</button></li>
+                <li class="nav-item"><button class="nav-link py-2 {% if not results.is_graph %}active{% endif %} small" data-bs-toggle="tab" data-bs-target="#table-pane"><i class="fa-solid fa-table"></i> Tabla</button></li>
+                <li class="nav-item"><button class="nav-link py-2 small" data-bs-toggle="tab" data-bs-target="#chart-pane"><i class="fa-solid fa-chart-pie"></i> Stats</button></li>
+            </ul>
+
+            <div class="tab-content flex-grow-1 position-relative overflow-hidden">
+                <!-- PANE GRAFO -->
+                <div class="tab-pane fade {% if results.is_graph %}show active{% endif %} h-100 w-100 position-relative" id="graph-pane">
+                    <div id="network-container"></div> <!-- CSS Absolute 100% -->
+                    
+                    <!-- Controles Zoom Flotantes -->
+                    <div class="position-absolute bottom-0 start-0 m-2 btn-group-vertical shadow opacity-75">
+                        <button class="btn btn-light btn-sm p-1" onclick="network.moveTo({scale: 1.5})"><i class="fa-solid fa-plus"></i></button>
+                        <button class="btn btn-light btn-sm p-1" onclick="network.fit()"><i class="fa-solid fa-compress"></i></button>
+                        <button class="btn btn-light btn-sm p-1" onclick="network.moveTo({scale: 0.5})"><i class="fa-solid fa-minus"></i></button>
+                    </div>
+                </div>
+
+                <!-- PANE TABLA -->
+                <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 overflow-auto bg-white" id="table-pane">
+                    <div class="table-responsive h-100">
+                        <table class="table table-hover table-striped table-sm mb-0 align-middle small table-bordered border-top-0">
+                            <thead class="table-dark sticky-top shadow-sm">
+                                <tr>
+                                    <th class="text-center bg-secondary" style="width: 40px;">#</th>
+                                    {% for col in results.columns %}
+                                    <th class="text-nowrap px-2 py-2">{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in results.rows %}
+                                <tr>
+                                    <td class="text-center text-muted bg-light">{{ loop.index }}</td>
+                                    {% for col in results.columns %}
+                                    <td class="px-2 py-1 text-nowrap" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                                        {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col %}
+                                            {% if row[col] != "-" and "Lista" not in row[col] %}
+                                            <a href="#" class="text-decoration-none fw-bold text-dark d-flex align-items-center justify-content-between"
+                                               onclick="updateSearchParam('{{ row[col] }}', '{{ row[col] }}'); return false;">
+                                                <span>{{ row[col] }}</span>
+                                                <i class="fa-solid fa-crosshairs text-primary opacity-50 ms-1" style="font-size: 0.7rem;"></i>
+                                            </a>
+                                            {% else %}
+                                                {{ row[col] }}
+                                            {% endif %}
+                                        {% else %}
+                                            {{ row[col] }}
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PANE CHART -->
+                <div class="tab-pane fade h-100 w-100 p-2 overflow-hidden bg-white" id="chart-pane">
+                    <div class="d-flex flex-column h-100 w-100">
+                        <h6 class="text-center text-secondary small text-uppercase fw-bold my-2" id="chart-title">Estadísticas</h6>
+                        <div class="flex-grow-1 position-relative w-100" style="min-height: 0;">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                        <p class="text-center text-muted small mt-1 fst-italic" style="font-size: 0.7rem;" id="chart-msg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Estado Vacío -->
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-center p-4 bg-light">
+            <div class="bg-white p-4 rounded-circle shadow-sm mb-3">
+                <i class="fa-solid fa-magnifying-glass-chart fa-3x text-primary opacity-50"></i>
+            </div>
+            <h5 class="fw-bold text-dark">Bienvenido</h5>
+            <p class="text-muted small">Abre el menú lateral para ejecutar una consulta.</p>
+            <button class="btn btn-primary btn-sm d-lg-none mt-2 pulse-animation" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+                <i class="fa-solid fa-arrow-right me-2"></i>Abrir Menú
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Botón Flotante (FAB) para reabrir menú en móvil si hay resultados -->
+        {% if results %}
+        <button class="btn btn-primary rounded-circle shadow-lg d-lg-none position-fixed bottom-0 end-0 m-3 d-flex align-items-center justify-content-center" 
+                style="width: 50px; height: 50px; z-index: 1030;" 
+                data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        {% endif %}
     </div>
 </div>
 
-<!-- OFF CANVAS DETALLE NODO -->
-<div class="offcanvas offcanvas-end shadow" tabindex="-1" id="nodeOffcanvas" aria-labelledby="offcanvasRightLabel" data-bs-backdrop="false">
-    <div class="offcanvas-header bg-primary text-white">
-        <h5 id="offcanvasRightLabel" class="fw-bold"><i class="fa-solid fa-circle-info me-2"></i>Detalle del Nodo</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+<!-- OFF CANVAS DETALLE NODO (Panel Derecha) -->
+<div class="offcanvas offcanvas-end shadow border-start" tabindex="-1" id="nodeOffcanvas" data-bs-backdrop="false" style="max-width: 90vw;">
+    <div class="offcanvas-header bg-primary text-white py-2">
+        <h6 class="offcanvas-title fw-bold"><i class="fa-solid fa-circle-info me-2"></i>Detalle</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-        <div class="text-center mb-4">
-            <div class="display-6 mb-2 text-primary"><i class="fa-solid fa-cube"></i></div>
-            <h5 id="canvasNodeLabel" class="fw-bold text-break"></h5>
-            <span id="canvasNodeType" class="badge bg-secondary fs-6"></span>
+        <div class="text-center mb-3">
+            <div class="badge bg-light text-primary border p-2 mb-2 rounded-circle"><i class="fa-solid fa-cube fa-2x"></i></div>
+            <h5 id="canvasNodeLabel" class="fw-bold text-break lh-sm"></h5>
+            <span id="canvasNodeType" class="badge bg-secondary"></span>
         </div>
         
-        <div class="card bg-light border-0 mb-4">
-            <div class="card-body">
-                <label class="small text-muted fw-bold text-uppercase">Identificador Único</label>
-                <div class="d-flex align-items-center gap-2">
-                    <code id="canvasNodeId" class="fs-5 fw-bold text-dark"></code>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('canvasNodeId').innerText)"><i class="fa-regular fa-copy"></i></button>
-                </div>
+        <div class="card bg-light border-0 mb-3">
+            <div class="card-body p-2 text-center">
+                <small class="text-muted fw-bold text-uppercase d-block mb-1">ID del Nodo</small>
+                <code id="canvasNodeId" class="fs-6 fw-bold text-dark"></code>
             </div>
         </div>
 
         <div class="d-grid gap-2">
-            <button class="btn btn-primary py-2 fw-bold" onclick="setFocusFromCanvas()">
-                <i class="fa-solid fa-crosshairs me-2"></i> Usar como Objetivo
+            <button class="btn btn-primary fw-bold btn-sm py-2" onclick="setFocusFromCanvas()">
+                <i class="fa-solid fa-crosshairs me-2"></i> Usar como Filtro
             </button>
-            <button class="btn btn-outline-dark py-2" data-bs-dismiss="offcanvas">
+            <button class="btn btn-outline-dark btn-sm py-2" data-bs-dismiss="offcanvas">
                 Cerrar
             </button>
         </div>
@@ -280,18 +282,21 @@
                 option: function(item, escape) {
                     return `<div class="py-2 d-flex align-items-center border-bottom">
                                 <div class="me-2"><span class="badge bg-secondary">${escape(item.label)}</span></div>
-                                <div><div class="fw-bold">${escape(item.title)}</div></div>
+                                <div class="text-truncate" style="max-width: 180px;">${escape(item.title)}</div>
                             </div>`;
                 }
             }
         });
         
-        // Expandir acordeón activo
+        // Expandir acordeón activo y hacer scroll
         {% if current_query %}
             const activeRadio = document.querySelector('input[name="query_id"][value="{{ current_query }}"]');
             if(activeRadio) {
                 const collapseDiv = activeRadio.closest('.accordion-collapse');
-                if(collapseDiv) new bootstrap.Collapse(collapseDiv, { toggle: true });
+                if(collapseDiv) {
+                    new bootstrap.Collapse(collapseDiv, { toggle: true });
+                    setTimeout(() => activeRadio.scrollIntoView({block: "center"}), 300);
+                }
             }
         {% endif %}
     });
@@ -305,9 +310,17 @@
             badge.style.display = 'inline-block';
             setTimeout(() => badge.style.display = 'none', 2000);
             
-            const offcanvasEl = document.getElementById('nodeOffcanvas');
-            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
-            if (bsOffcanvas) bsOffcanvas.hide();
+            // Cerrar offcanvas detalle si está abierto
+            const offEl = document.getElementById('nodeOffcanvas');
+            const bsOff = bootstrap.Offcanvas.getInstance(offEl);
+            if (bsOff) bsOff.hide();
+
+            // En móvil, abrir el menú lateral para mostrar que se seleccionó
+            if(window.innerWidth < 992) {
+               const menuEl = document.getElementById('sidebarMenu');
+               const bsMenu = bootstrap.Offcanvas.getOrCreateInstance(menuEl);
+               bsMenu.show();
+            }
         }
     }
 
@@ -336,30 +349,21 @@
                 '<div class="d-flex h-100 align-items-center justify-content-center text-muted flex-column"><i class="fa-solid fa-ban fa-2x mb-2"></i><span>Datos no representables en grafo.</span></div>';
         }
 
-        // 2. MEJORA GRÁFICO DE BARRAS (CHART.JS)
-        // Detectar columnas numéricas con una lista de palabras clave más amplia
-        const numericKeywords = [
-            'CANTIDAD', 'TOTAL', 'SCORE', 'VECES', 'PRECIO', 'STOCK', 
-            'NUM', 'CONEXIONES', 'RIESGO', 'LONGITUD', 'DENSIDAD', 
-            'PORCENTAJE', 'MEDIA', 'PROMEDIO', 'OBSOLETOS'
-        ];
-        
+        // 2. CHART JS CONFIG
+        const numericKeywords = ['CANTIDAD', 'TOTAL', 'SCORE', 'VECES', 'PRECIO', 'STOCK', 'NUM', 'CONEXIONES', 'RIESGO', 'LONGITUD', 'DENSIDAD', 'PORCENTAJE', 'MEDIA', 'PROMEDIO', 'OBSOLETOS'];
         const numericCol = cols.find(c => numericKeywords.some(k => c.toUpperCase().includes(k)));
-        
-        // Detectar etiqueta (Nombre, Descripción, ID, o la primera columna de texto)
         const labelKeywords = ['DESCRIPCION', 'NAME', 'NOMBRE', 'EQUIPO', 'MATERIAL', 'A_LABEL', 'PLANTA', 'TAG'];
         const labelCol = cols.find(c => labelKeywords.some(k => c.toUpperCase().includes(k))) || cols[0];
 
         if (numericCol && rows.length > 0) {
-            // Actualizar título
             document.getElementById('chart-title').innerText = `${numericCol} por ${labelCol}`;
-
             const ctx = document.getElementById('mainChart').getContext('2d');
             
-            // Preparar datos
-            const labels = rows.map(r => (r[labelCol] || '').substring(0, 30) + (r[labelCol]?.length>30?'...':''));
-            const dataValues = rows.map(r => {
-                // Limpiar strings para obtener float (quitar '€', '$', etc si los hubiera)
+            // Top 30 para no saturar móvil
+            const topRows = rows.slice(0, 30);
+            
+            const labels = topRows.map(r => (r[labelCol] || '').substring(0, 15) + (r[labelCol]?.length>15?'...':''));
+            const dataValues = topRows.map(r => {
                 let val = r[numericCol];
                 if (typeof val === 'string') val = val.replace(/[^0-9.-]+/g,"");
                 return parseFloat(val) || 0;
@@ -372,70 +376,65 @@
                     datasets: [{ 
                         label: numericCol, 
                         data: dataValues, 
-                        backgroundColor: dataValues.map(v => v > 0 ? '#3498db' : '#e74c3c'),
-                        borderRadius: 4,
-                        borderWidth: 1
+                        backgroundColor: '#3498db',
+                        borderRadius: 3
                     }]
                 }, 
                 options: { 
                     responsive: true,
-                    maintainAspectRatio: false, // Importante para llenar el div padre
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { 
-                            callbacks: { 
-                                label: function(context) { 
-                                    return context.parsed.y + ' ' + numericCol.toLowerCase(); 
-                                } 
-                            } 
-                        }
-                    },
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
-                        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } }
+                        x: { ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 } } // Rotar etiquetas en móvil
                     }
                 }
             });
         } else {
-            document.getElementById('chart-msg').innerHTML = `<i class="fa-solid fa-circle-exclamation text-warning me-2"></i> No se encontraron columnas numéricas obvias (ej: Total, Cantidad, Stock) para graficar en: <b>[${cols.join(", ")}]</b>`;
+            document.getElementById('chart-msg').innerHTML = `No se encontraron datos numéricos para graficar.`;
         }
 
-        // --- FUNCIÓN PARA INICIALIZAR VIS.JS (MEJORADA) ---
+        // --- FUNCIÓN PARA INICIALIZAR VIS.JS ---
         function initGraph(data) {
             const container = document.getElementById('network-container');
             const nodesMap = new Map();
             const edgesArr = [];
             
+            // Limitar nodos en móvil para rendimiento
+            const isMobile = window.innerWidth < 768;
+            const maxNodes = isMobile ? 150 : 1000;
+            let processedCount = 0;
+
             data.forEach((row) => {
-                // Nodo A
+                if(processedCount > maxNodes) return;
+
                 if (row.A_ID && !nodesMap.has(row.A_ID)) {
                     nodesMap.set(row.A_ID, {
                         id: row.A_ID, 
-                        label: formatLabel(row.A_LABEL), 
+                        label: isMobile ? (row.A_LABEL || row.A_ID).substring(0,8)+".." : formatLabel(row.A_LABEL), 
                         fullLabel: row.A_LABEL,
                         group: row.A_TYPE,
-                        value: 1 // Tamaño base
+                        value: 1
                     });
+                    processedCount++;
                 }
-                // Nodo B
                 if (row.B_ID && !nodesMap.has(row.B_ID)) {
                     nodesMap.set(row.B_ID, {
                         id: row.B_ID, 
-                        label: formatLabel(row.B_LABEL), 
+                        label: isMobile ? (row.B_LABEL || row.B_ID).substring(0,8)+".." : formatLabel(row.B_LABEL), 
                         fullLabel: row.B_LABEL,
                         group: row.B_TYPE,
                         value: 1
                     });
+                    processedCount++;
                 }
-                // Relación
                 if (row.A_ID && row.B_ID) {
                     edgesArr.push({
                         from: row.A_ID, 
                         to: row.B_ID, 
                         label: row.RELACION || '', 
                         arrows: 'to',
-                        color: { color: '#bdc3c7', inherit: false },
-                        font: { align: 'middle', size: 9, strokeWidth: 2, strokeColor: '#ffffff' }
+                        color: { color: '#bdc3c7' },
+                        font: { align: 'middle', size: isMobile ? 8 : 10 }
                     });
                 }
             });
@@ -443,13 +442,12 @@
             nodesDataSet = new vis.DataSet(Array.from(nodesMap.values()));
             edgesDataSet = new vis.DataSet(edgesArr);
 
-            // CONFIGURACIÓN DE FÍSICA MEJORADA PARA EXPANDIR EL GRAFO
             const options = {
                 nodes: { 
                     shape: 'dot', 
-                    scaling: { min: 10, max: 30 },
-                    font: { size: 14, face: 'Outfit', color: '#333' },
-                    borderWidth: 2,
+                    scaling: { min: 10, max: 25 },
+                    font: { size: isMobile ? 12 : 14, face: 'Outfit', color: '#333' },
+                    borderWidth: 1,
                     shadow: true
                 }, 
                 edges: { width: 1, smooth: { type: 'continuous' } },
@@ -463,10 +461,8 @@
                 physics: {
                     stabilization: true,
                     barnesHut: { 
-                        gravitationalConstant: -4000, // Más repulsión
-                        centralGravity: 0.1,         // Menos atracción al centro
-                        springLength: 250,           // Conexiones más largas
-                        springConstant: 0.04
+                        gravitationalConstant: isMobile ? -2000 : -4000, 
+                        springLength: isMobile ? 150 : 250
                     }
                 },
                 interaction: { hover: true, tooltipDelay: 200, zoomView: true }
@@ -480,7 +476,6 @@
                     const node = nodesDataSet.get(nodeId);
                     
                     selectedNodeData = { id: node.id, label: node.fullLabel };
-
                     document.getElementById('canvasNodeLabel').innerText = node.fullLabel;
                     document.getElementById('canvasNodeType').innerText = node.group;
                     document.getElementById('canvasNodeId').innerText = node.id;
@@ -500,7 +495,7 @@
             network.fit({animation:false}); 
             setTimeout(() => { 
                 let a = document.createElement('a'); 
-                a.download = 'grafo_industrial.png'; 
+                a.download = 'grafo.png'; 
                 a.href = document.getElementById('network-container').getElementsByTagName('canvas')[0].toDataURL(); 
                 a.click(); 
             }, 500); 
@@ -511,9 +506,18 @@
             rows.forEach(r => csv += cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(",") + "\n");
             let a = document.createElement('a'); 
             a.href = window.URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); 
-            a.download = 'reporte_industrial.csv'; 
+            a.download = 'datos.csv'; 
             a.click();
         }
     {% endif %}
 </script>
+<style>
+    /* Animación para guiar al usuario en móvil */
+    @keyframes pulse-btn {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+    }
+    .pulse-animation { animation: pulse-btn 2s infinite; }
+</style>
 {% endblock %}
