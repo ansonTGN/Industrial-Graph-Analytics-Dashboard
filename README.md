@@ -11,7 +11,7 @@ Aquí tienes el `README.md` completo y actualizado. He añadido una sección vis
 
 <!-- GALERÍA DE IMÁGENES -->
 <div align="center">
-  <img src="AAP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+  <img src="IMG/AAP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
   <img src="IMG/AAP-01.png" width="48%" alt="Dashboard Graph View" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
   <p><em>Dashboard Views: Login & Interactive Graph Explorer</em></p>
 </div>
