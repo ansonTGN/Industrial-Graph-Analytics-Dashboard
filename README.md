@@ -1,9 +1,22 @@
+Aquí tienes el `README.md` completo y actualizado. He añadido una sección visual al principio con las capturas de pantalla centradas y dispuestas lado a lado para una apariencia profesional.
+
+---
+
 # 🏭 Neo4j Industrial Graph Analytics
 
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust)
 ![Neo4j](https://img.shields.io/badge/Neo4j-Database-blue?logo=neo4j)
 ![Actix-Web](https://img.shields.io/badge/Framework-Actix_Web-green)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+<!-- GALERÍA DE IMÁGENES -->
+<div align="center">
+  <img src="IMG/APP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+  <img src="IMG/APP-01.png" width="48%" alt="Dashboard Graph View" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+  <p><em>Dashboard Views: Login & Interactive Graph Explorer</em></p>
+</div>
+
+---
 
 **[Español](#es) | [English](#en) | [Català](#ca)**
 
@@ -17,13 +30,6 @@
 
 El sistema está optimizado para entornos de ingeniería, ofreciendo renderizado de grafos en tiempo real, análisis de listas de materiales (BOM) y detección de patrones logísticos.
 
-<!-- GALERÍA DE IMÁGENES -->
-<div align="center">
-<img src="IMG/APP-00.png" width="48%" alt="Login Screen - Neo4j Analytics" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-<img src="IMG/APP-01.png" width="48%" alt="Dashboard Graph View" style="border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-<p><em>Dashboard Views: Login & Interactive Graph Explorer</em></p>
-</div>
-
 ### ✨ Características Principales
 *   **🚀 Backend en Rust:** Latencia ultrabaja y gestión segura de concurrencia.
 *   **🕸 Visualización Interactiva:** Motor gráfico basado en `Vis.js`.
@@ -32,7 +38,7 @@ El sistema está optimizado para entornos de ingeniería, ofreciendo renderizado
 *   **🔍 Búsqueda Avanzada:** Autocompletado para Ubicaciones, Equipos y Repuestos.
 
 ### ⚙️ Gestión de Consultas (JSON)
-El núcleo analítico reside en el archivo `queries.json`. Puedes añadir o modificar consultas sin recompiar el código Rust (solo requiere reiniciar la aplicación).
+El núcleo analítico reside en el archivo `queries.json`. Puedes añadir o modificar consultas sin recompilar el código Rust (solo requiere reiniciar la aplicación).
 
 #### Estructura del Objeto JSON
 ```json
