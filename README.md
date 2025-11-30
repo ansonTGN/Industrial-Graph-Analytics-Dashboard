@@ -1,192 +1,271 @@
-# Neo4j Industrial Graph Analytics
+# Neo4j Industrial Graph Dashboard
+**Analítica Avanzada de Activos Industriales con Rust + Neo4j + IA**
 
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust)
-![Neo4j](https://img.shields.io/badge/Neo4j-Database-blue?logo=neo4j)
-![Actix-Web](https://img.shields.io/badge/Framework-Actix_Web-green)
+![Neo4j](https://img.shields.io/badge/Neo4j-Aura%20%2F%20Local-blue?logo=neo4j)
+![Actix-Web](https://img.shields.io/badge/Backend-Actix_Web-green)
+![OpenAI](https://img.shields.io/badge/AI-OpenAI%20Integration-purple?logo=openai)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-<!-- GALERÍA DE IMÁGENES -->
-<div align="center">
-  <img src="https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard/blob/main/IMG/AAP-00.png?raw=true" width="48%" alt="Vista Grafo Interactivo" style="border-radius: 8px; margin-right: 5px;">
-  <img src="https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard/blob/main/IMG/AAP-01.png?raw=true" width="48%" alt="Vista Tabular de Datos" style="border-radius: 8px; margin-left: 5px;">
-  <br>
-  <p><em>Dashboard Views: Interactive Graph Explorer & Data Grid</em></p>
-</div>
+---
+
+**Idiomas / Languages / Idiomes:**  
+[🇪🇸 Español](#-español) | [🇬🇧 English](#-english) | [🏴 Català](#-català)
 
 ---
 
-**[Español](#es) | [English](#en) | [Català](#ca)**
+<a name="-español"></a>
+# 🇪🇸 Español
+
+## 📖 Descripción General
+**Neo4j Industrial Graph Dashboard** es una plataforma web de alto rendimiento para la visualización, auditoría y análisis de activos industriales complejos. Utiliza **Rust** para el backend, garantizando velocidad y seguridad, y **Neo4j** como base de datos de grafos para modelar relaciones jerárquicas (Plantas → Equipos → Materiales).
+
+La característica más potente es su **Asistente de IA Integrado**, que permite interrogar a la base de datos utilizando lenguaje natural, transformando preguntas complejas en ejecuciones de datos precisas.
 
 ---
 
-<a name="es"></a>
-## 🇪🇸 Español
+## 🧩 Gestión de Consultas (Queries)
 
-### 📖 Sobre el Proyecto
-**Neo4j Industrial Analytics** es un panel de control web de alto rendimiento desarrollado en **Rust** (usando Actix-Web) diseñado para la visualización, análisis y auditoría de activos industriales complejos. La aplicación permite explorar relaciones jerárquicas entre Plantas, Equipos y Materiales almacenados en una base de datos de grafos Neo4j.
+El núcleo de la aplicación es dinámico. No es necesario modificar el código fuente en Rust para añadir nuevas analíticas; todo se gestiona desde el archivo `queries.json`.
 
-El sistema está optimizado para entornos de ingeniería, ofreciendo renderizado de grafos en tiempo real, análisis de listas de materiales (BOM) y detección de patrones logísticos.
+Este archivo alimenta tanto el **Menú Lateral** de la interfaz como las **Herramientas (Tools)** disponibles para la Inteligencia Artificial.
 
-### ✨ Características Principales
-*   **🚀 Backend en Rust:** Latencia ultrabaja y gestión segura de concurrencia.
-*   **🕸 Visualización Interactiva:** Motor gráfico basado en `Vis.js`.
-*   **📊 Analítica Modular:** Sistema de consultas dinámico cargado desde `queries.json`.
-*   **📈 Gráficos Automáticos:** Histogramas estadísticos con `Chart.js`.
-*   **🔍 Búsqueda Avanzada:** Autocompletado para Ubicaciones, Equipos y Repuestos.
+### Estructura de una Consulta
+Cada objeto en `queries.json` debe seguir este esquema:
 
-### ⚙️ Gestión de Consultas (JSON)
-El núcleo analítico reside en el archivo `queries.json`. Puedes añadir o modificar consultas sin recompilar el código Rust (solo requiere reiniciar la aplicación).
-
-#### Estructura del Objeto JSON
 ```json
 {
-  "id": "C01",                  // Identificador único
-  "category": "Mantenimiento",  // Agrupación en el menú lateral
-  "title": "Título Visible",    // Nombre en la interfaz
-  "description": "Tooltip...",  // Descripción al pasar el mouse
-  "cypher": "MATCH ...",        // Código Cypher (ver abajo)
-  "needs_param": true,          // true = Requiere seleccionar un nodo previo
-  "is_graph": true,             // true = Renderiza Grafo, false = Tabla/Chart
-  "icon": "fa-bolt"             // Clase de icono FontAwesome 6
+  "id": "M01",                  // Identificador único (usado por la API y la IA)
+  "category": "Mantenimiento",  // Agrupación en el menú visual
+  "title": "Desglose BOM",      // Nombre visible para el usuario
+  "description": "Visualiza...",// Descripción para el usuario y contexto para la IA
+  "cypher": "MATCH ...",        // La consulta Cypher a ejecutar en Neo4j
+  "needs_param": true,          // true: Requiere un ID de nodo ($p). false: Consulta global.
+  "is_graph": true,             // true: Renderiza nodos/aristas. false: Renderiza Tabla/Gráfico.
+  "icon": "fa-share-nodes"      // Clase de icono FontAwesome 6
 }
 ```
 
-#### Reglas para Cypher
-1.  **Parámetro de Entrada:** Si `needs_param` es `true`, debes usar **`$p`** en tu consulta Cypher para referenciar el ID del nodo seleccionado.
-    *   *Ejemplo:* `MATCH (n {id: $p})...`
-2.  **Visualización de Grafos (`is_graph: true`):** Para que el visualizador de redes funcione, la consulta **DEBE** devolver exactamente estas columnas con estos alias:
-    *   `A_ID`, `A_LABEL`, `A_TYPE` (Nodo Origen)
-    *   `B_ID`, `B_LABEL`, `B_TYPE` (Nodo Destino)
-    *   `RELACION` (Etiqueta de la arista)
-3.  **Visualización de Tablas/Gráficos:** Devuelve cualquier columna. Si una columna es numérica (ej. `TOTAL`, `CANTIDAD`), se generará automáticamente un gráfico de barras.
+### ➕ Cómo añadir una nueva consulta
+1. Abra el archivo `queries.json` en la raíz del proyecto.
+2. Agregue un nuevo objeto al array JSON.
+3. **Importante:** Si la consulta requiere un parámetro (ej. buscar hijos de un equipo específico), use `$p` en el código Cypher y establezca `"needs_param": true`.
+4. Guarde el archivo.
+5. **Reinicie la aplicación**. El sistema cargará la nueva consulta, la añadirá al menú y la registrará automáticamente como una nueva habilidad para el Asistente de IA.
 
-### 🚀 Instalación y Uso
-1.  **Clonar y Configurar:**
-    ```bash
-    git clone https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard.git
-    cd Industrial-Graph-Analytics-Dashboard
-    # Crear archivo .env
-    echo 'NEO4J_URI="bolt://localhost:7687"\nNEO4J_USERNAME="neo4j"\nNEO4J_PASSWORD="pass"' > .env
-    ```
-2.  **Ejecutar:**
-    ```bash
-    cargo run --release
-    ```
-3.  **Acceso:** Navegar a `http://localhost:8081`.
+### ➖ Cómo eliminar o modificar
+* **Eliminar:** Simplemente borre el bloque JSON correspondiente y reinicie.
+* **Modificar:** Edite el campo `cypher` o `description` y reinicie. Los cambios se reflejarán instantáneamente en la capacidad de razonamiento de la IA.
 
 ---
 
-<a name="en"></a>
-## 🇬🇧 English
+## 🤖 Uso de la Inteligencia Artificial
 
-### 📖 About the Project
-**Neo4j Industrial Analytics** is a high-performance web dashboard built in **Rust** (Actix-Web) designed for visualizing, analyzing, and auditing complex industrial assets. The application allows users to explore hierarchical relationships between Plants, Equipment, and Materials stored in a Neo4j Graph Database.
+La aplicación incluye un chat inteligente (botón flotante 🤖) capaz de razonar sobre los datos industriales.
 
-The system is optimized for engineering environments, offering real-time graph rendering, Bill of Materials (BOM) analysis, and supply chain pattern detection.
+### ¿Cómo funciona?
+1. **Trae tu propia clave (BYOK):** Al abrir el chat, se solicitará una API Key de OpenAI (`sk-...`). Esta clave se guarda **localmente en su navegador** (LocalStorage) y nunca se almacena en el servidor.
+2. **Definición de Herramientas:** El backend convierte automáticamente las consultas de `queries.json` en "Tools" de OpenAI.
+3. **Razonamiento:** Cuando usted pregunta *"¿Qué equipos tienen riesgo de obsolescencia?"*:
+    * La IA analiza la pregunta.
+    * Busca en su lista de herramientas y selecciona `M04` (Impacto Obsolescencia).
+    * Solicita al servidor ejecutar esa consulta.
+    * El servidor devuelve los datos JSON.
+    * La IA interpreta los datos y le responde: *"He encontrado 5 equipos en riesgo, incluyendo la Bomba P-201..."*.
 
-### ✨ Key Features
-*   **🚀 Rust Backend:** Ultra-low latency and safe concurrency management.
-*   **🕸 Interactive Visualization:** Graph engine based on `Vis.js`.
-*   **📊 Modular Analytics:** Dynamic query system loaded from `queries.json`.
-*   **📈 Automatic Charting:** Statistical histograms via `Chart.js`.
-*   **🔍 Advanced Search:** Autocomplete for Plants, Equipment, and Spares.
-
-### ⚙️ Custom Query Management (JSON)
-The analytical core is driven by `queries.json`. You can add or modify queries without recompiling the Rust code (application restart required).
-
-#### JSON Object Structure
-```json
-{
-  "id": "C01",                  // Unique ID
-  "category": "Maintenance",    // Sidebar group name
-  "title": "Visible Title",     // Interface name
-  "description": "Tooltip...",  // Mouseover description
-  "cypher": "MATCH ...",        // Cypher code (see below)
-  "needs_param": true,          // true = Requires a target node selection
-  "is_graph": true,             // true = Graph View, false = Table/Chart
-  "icon": "fa-bolt"             // FontAwesome 6 icon class
-}
-```
-
-#### Cypher Rules
-1.  **Input Parameter:** If `needs_param` is `true`, you must use **`$p`** in your Cypher query to reference the selected node's ID.
-    *   *Example:* `MATCH (n {id: $p})...`
-2.  **Graph Visualization (`is_graph: true`):** For the network visualizer to work, the query **MUST** return exactly these columns with these aliases:
-    *   `A_ID`, `A_LABEL`, `A_TYPE` (Source Node)
-    *   `B_ID`, `B_LABEL`, `B_TYPE` (Target Node)
-    *   `RELACION` (Edge Label)
-3.  **Table/Chart Visualization:** Return any columns. If a column is numeric (e.g., `TOTAL`, `QUANTITY`), a bar chart will be automatically generated.
-
-### 🚀 Installation & Usage
-1.  **Clone & Setup:**
-    ```bash
-    git clone https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard.git
-    cd Industrial-Graph-Analytics-Dashboard
-    # Create .env file
-    echo 'NEO4J_URI="bolt://localhost:7687"\nNEO4J_USERNAME="neo4j"\nNEO4J_PASSWORD="pass"' > .env
-    ```
-2.  **Run:**
-    ```bash
-    cargo run --release
-    ```
-3.  **Access:** Open browser at `http://localhost:8081`.
+### Notas de Seguridad
+* Las peticiones a OpenAI pasan a través de un **Proxy en el servidor Rust** (`/api/openai_proxy`) para evitar errores de CORS y proteger la comunicación.
+* La IA solo tiene acceso de lectura a los datos que exponen las consultas definidas en `queries.json`.
 
 ---
 
-<a name="ca"></a>
-## 🏴󠁥󠁳󠁣󠁴󠁿 Català
+## 🚀 Despliegue en Render / Docker
 
-### 📖 Sobre el Projecte
-**Neo4j Industrial Analytics** és un tauler de control web d'alt rendiment desenvolupat en **Rust** (fent servir Actix-Web), dissenyat per a la visualització, anàlisi i auditoria d'actius industrials complexos. L'aplicació permet explorar relacions jeràrquiques entre Plantes, Equips i Materials emmagatzemats en una base de dades de grafs Neo4j.
+El proyecto está optimizado para contenedores.
 
-El sistema està optimitzat per a entorns d'enginyeria, oferint renderitzat de grafs en temps real, anàlisi de llistes de materials (BOM) i detecció de patrons logístics.
+```bash
+# Construir y ejecutar localmente
+docker build -t neo4j_dashboard .
+docker run -p 8080:8080 --env-file .env neo4j_dashboard
+```
 
-### ✨ Característiques Principals
-*   **🚀 Backend en Rust:** Latència ultrabaixa i gestió segura de concurrència.
-*   **🕸 Visualització Interactiva:** Motor gràfic basat en `Vis.js`.
-*   **📊 Analítica Modular:** Sistema de consultes dinàmic carregat des de `queries.json`.
-*   **📈 Gràfics Automàtics:** Histogrames estadístics amb `Chart.js`.
-*   **🔍 Cerca Avançada:** Autocompletat per a Plantes, Equips i Recanvis.
+Variables de entorno requeridas (`.env`):
+```env
+NEO4J_URI="neo4j+s://<tu-instancia>.databases.neo4j.io"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="<tu-password>"
+PORT=8080
+```
 
-### ⚙️ Gestió de Consultes (JSON)
-El nucli analític resideix al fitxer `queries.json`. Pots afegir o modificar consultes sense recompilar el codi Rust (només cal reiniciar l'aplicació).
+---
 
-#### Estructura de l'Objecte JSON
+<a name="-english"></a>
+# 🇬🇧 English
+
+## 📖 Overview
+**Neo4j Industrial Graph Dashboard** is a high-performance web platform for visualization, auditing, and analysis of complex industrial assets. It uses **Rust** for the backend, ensuring speed and safety, and **Neo4j** as a graph database to model hierarchical relationships (Plants → Equipment → Materials).
+
+Its most powerful feature is the **Integrated AI Assistant**, which allows users to query the database using natural language, transforming complex questions into precise data executions.
+
+---
+
+## 🧩 Query Management
+
+The core of the application is dynamic. There is no need to modify the Rust source code to add new analytics; everything is managed via the `queries.json` file.
+
+This file powers both the **Sidebar Menu** and the **Tools** available to the Artificial Intelligence.
+
+### Query Structure
+Each object in `queries.json` must follow this schema:
+
 ```json
 {
-  "id": "C01",                  // Identificador únic
-  "category": "Manteniment",    // Agrupació al menú lateral
-  "title": "Títol Visible",     // Nom a la interfície
-  "description": "Tooltip...",  // Descripció en passar el ratolí
-  "cypher": "MATCH ...",        // Codi Cypher (veure a sota)
-  "needs_param": true,          // true = Requereix seleccionar un node previ
-  "is_graph": true,             // true = Renderitza Graf, false = Taula/Chart
-  "icon": "fa-bolt"             // Classe d'icona FontAwesome 6
+  "id": "M01",                  // Unique ID (used by API and AI)
+  "category": "Maintenance",    // Grouping in the visual menu
+  "title": "BOM Breakdown",     // Visible name for the user
+  "description": "Visualizes...",// Description for user & context for AI
+  "cypher": "MATCH ...",        // The Cypher query to execute in Neo4j
+  "needs_param": true,          // true: Requires a node ID ($p). false: Global query.
+  "is_graph": true,             // true: Renders nodes/edges. false: Renders Table/Chart.
+  "icon": "fa-share-nodes"      // FontAwesome 6 icon class
 }
 ```
 
-#### Regles per a Cypher
-1.  **Paràmetre d'Entrada:** Si `needs_param` és `true`, has d'utilitzar **`$p`** a la teva consulta Cypher per referenciar l'ID del node seleccionat.
-    *   *Exemple:* `MATCH (n {id: $p})...`
-2.  **Visualització de Grafs (`is_graph: true`):** Perquè el visualitzador de xarxes funcioni, la consulta **HA DE** retornar exactament aquestes columnes amb aquests àlies:
-    *   `A_ID`, `A_LABEL`, `A_TYPE` (Node Origen)
-    *   `B_ID`, `B_LABEL`, `B_TYPE` (Node Destí)
-    *   `RELACION` (Etiqueta de l'aresta)
-3.  **Visualització de Taules/Gràfics:** Retorna qualsevol columna. Si una columna és numèrica (ex. `TOTAL`, `QUANTITAT`), es generarà automàticament un gràfic de barres.
+### ➕ How to add a new query
+1. Open the `queries.json` file in the project root.
+2. Add a new object to the JSON array.
+3. **Important:** If the query requires a parameter (e.g., finding children of a specific equipment), use `$p` in the Cypher code and set `"needs_param": true`.
+4. Save the file.
+5. **Restart the application**. The system will load the new query, add it to the menu, and automatically register it as a new skill for the AI Assistant.
 
-### 🚀 Instal·lació i Ús
-1.  **Clonar i Configurar:**
-    ```bash
-    git clone https://github.com/ansonTGN/Industrial-Graph-Analytics-Dashboard.git
-    cd Industrial-Graph-Analytics-Dashboard
-    # Crear fitxer .env
-    echo 'NEO4J_URI="bolt://localhost:7687"\nNEO4J_USERNAME="neo4j"\nNEO4J_PASSWORD="pass"' > .env
-    ```
-2.  **Executar:**
-    ```bash
-    cargo run --release
-    ```
-3.  **Accés:** Navega a `http://localhost:8081`.
+### ➖ How to remove or modify
+* **Remove:** Simply delete the corresponding JSON block and restart.
+* **Modify:** Edit the `cypher` or `description` field and restart. Changes will instantly reflect in the AI's reasoning capabilities.
+
+---
+
+## 🤖 AI Usage
+
+The application includes a smart chat (floating button 🤖) capable of reasoning over industrial data.
+
+### How does it work?
+1. **Bring Your Own Key (BYOK):** Upon opening the chat, you will be asked for an OpenAI API Key (`sk-...`). This key is stored **locally in your browser** (LocalStorage) and is never stored on the server.
+2. **Tool Definition:** The backend automatically converts queries from `queries.json` into OpenAI "Tools".
+3. **Reasoning:** When you ask *"Which equipment is at risk of obsolescence?"*:
+    * The AI analyzes the question.
+    * It searches its tool list and selects `M04` (Obsolescence Impact).
+    * It requests the server to execute that query.
+    * The server returns raw JSON data.
+    * The AI interprets the data and answers: *"I found 5 equipment items at risk, including Pump P-201..."*.
+
+### Security Notes
+* Requests to OpenAI pass through a **Rust Server Proxy** (`/api/openai_proxy`) to prevent CORS errors and secure communication.
+* The AI only has read access to data exposed by the queries defined in `queries.json`.
+
+---
+
+## 🚀 Deployment on Render / Docker
+
+The project is container-optimized.
+
+```bash
+# Build and run locally
+docker build -t neo4j_dashboard .
+docker run -p 8080:8080 --env-file .env neo4j_dashboard
+```
+
+Required environment variables (`.env`):
+```env
+NEO4J_URI="neo4j+s://<your-instance>.databases.neo4j.io"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="<your-password>"
+PORT=8080
+```
+
+---
+
+<a name="-català"></a>
+# 🏴 Català
+
+## 📖 Descripció General
+**Neo4j Industrial Graph Dashboard** és una plataforma web d'alt rendiment per a la visualització, auditoria i anàlisi d'actius industrials complexos. Utilitza **Rust** per al backend, garantint velocitat i seguretat, i **Neo4j** com a base de dades de grafs per modelar relacions jeràrquiques (Plantes → Equips → Materials).
+
+La característica més potent és el seu **Assistent d'IA Integrat**, que permet interrogar la base de dades utilitzant llenguatge natural, transformant preguntes complexes en execucions de dades precises.
+
+---
+
+## 🧩 Gestió de Consultes (Queries)
+
+El nucli de l'aplicació és dinàmic. No cal modificar el codi font en Rust per afegir noves analítiques; tot es gestiona des del fitxer `queries.json`.
+
+Aquest fitxer alimenta tant el **Menú Lateral** de la interfície com les **Eines (Tools)** disponibles per a la Intel·ligència Artificial.
+
+### Estructura d'una Consulta
+Cada objecte a `queries.json` ha de seguir aquest esquema:
+
+```json
+{
+  "id": "M01",                  // Identificador únic (usat per l'API i la IA)
+  "category": "Manteniment",    // Agrupació al menú visual
+  "title": "Desglossament BOM", // Nom visible per a l'usuari
+  "description": "Visualitza...",// Descripció per l'usuari i context per a la IA
+  "cypher": "MATCH ...",        // La consulta Cypher a executar a Neo4j
+  "needs_param": true,          // true: Requereix un ID de node ($p). false: Consulta global.
+  "is_graph": true,             // true: Renderitza nodes/arestes. false: Renderitza Taula/Gràfic.
+  "icon": "fa-share-nodes"      // Classe d'icona FontAwesome 6
+}
+```
+
+### ➕ Com afegir una nova consulta
+1. Obriu el fitxer `queries.json` a l'arrel del projecte.
+2. Afegiu un nou objecte a l'array JSON.
+3. **Important:** Si la consulta requereix un paràmetre (ex. buscar fills d'un equip específic), utilitzeu `$p` al codi Cypher i establiu `"needs_param": true`.
+4. Deseu el fitxer.
+5. **Reinicieu l'aplicació**. El sistema carregarà la nova consulta, l'afegirà al menú i la registrarà automàticament com una nova habilitat per a l'Assistent d'IA.
+
+### ➖ Com eliminar o modificar
+* **Eliminar:** Simplement esborreu el bloc JSON corresponent i reinicieu.
+* **Modificar:** Editeu el camp `cypher` o `description` i reinicieu. Els canvis es reflectiran instantàniament en la capacitat de raonament de la IA.
+
+---
+
+## 🤖 Ús de la Intel·ligència Artificial
+
+L'aplicació inclou un xat intel·ligent (botó flotant 🤖) capaç de raonar sobre les dades industrials.
+
+### Com funciona?
+1. **Porta la teva pròpia clau (BYOK):** En obrir el xat, se sol·licitarà una API Key d'OpenAI (`sk-...`). Aquesta clau es desa **localment al vostre navegador** (LocalStorage) i mai s'emmagatzema al servidor.
+2. **Definició d'Eines:** El backend converteix automàticament les consultes de `queries.json` en "Tools" d'OpenAI.
+3. **Raonament:** Quan pregunteu *"Quins equips tenen risc d'obsolescència?"*:
+    * La IA analitza la pregunta.
+    * Cerca a la seva llista d'eines i selecciona `M04` (Impacte Obsolescència).
+    * Sol·licita al servidor executar aquesta consulta.
+    * El servidor retorna les dades JSON.
+    * La IA interpreta les dades i respon: *"He trobat 5 equips en risc, incloent-hi la Bomba P-201..."*.
+
+### Notes de Seguretat
+* Les peticions a OpenAI passen a través d'un **Proxy al servidor Rust** (`/api/openai_proxy`) per evitar errors de CORS i protegir la comunicació.
+* La IA només té accés de lectura a les dades que exposen les consultes definides a `queries.json`.
+
+---
+
+## 🚀 Desplegament a Render / Docker
+
+El projecte està optimitzat per a contenidors.
+
+```bash
+# Construir i executar localment
+docker build -t neo4j_dashboard .
+docker run -p 8080:8080 --env-file .env neo4j_dashboard
+```
+
+Variables d'entorn requerides (`.env`):
+```env
+NEO4J_URI="neo4j+s://<la-teva-instancia>.databases.neo4j.io"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="<el-teu-password>"
+PORT=8080
+```
 
 ---
 
@@ -194,4 +273,4 @@ El nucli analític resideix al fitxer `queries.json`. Pots afegir o modificar co
 **Angel A. Urbina**
 
 ### License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
