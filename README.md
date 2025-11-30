@@ -270,7 +270,8 @@ PORT=8080
 ---
 
 ### Author / Autor
-**Angel A. Urbina**
+**Angel A. Urbina**  
+📧 [CV & Portfolio](https://angelurbinacv.netlify.app/)
 
 ### License
 This project is licensed under the MIT License.
