@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); flex-shrink: 0;">
+<nav class="navbar navbar-dark shadow-sm" style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); flex-shrink: 0; z-index: 1040;">
     <div class="container-fluid px-4">
         <a class="navbar-brand d-flex align-items-center gap-2" href="#">
             <i class="fa-solid fa-network-wired text-info"></i> 
@@ -10,27 +10,41 @@
                 <div style="font-size: 0.65rem; opacity: 0.7; letter-spacing: 1px;">PETROCHEM SYSTEMS</div>
             </div>
         </a>
-        <button class="btn btn-outline-light d-lg-none me-auto" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse">
+        
+        <!-- BOTÓN MÓVIL PARA SIDEBAR -->
+        <button class="btn btn-outline-light d-lg-none me-auto ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <div class="d-none d-lg-flex align-items-center bg-black bg-opacity-25 px-3 py-1 rounded-pill border border-secondary border-opacity-25">
+
+        <div class="d-none d-lg-flex align-items-center bg-black bg-opacity-25 px-3 py-1 rounded-pill border border-secondary border-opacity-25 ms-auto">
             <span class="d-flex align-items-center text-light small fw-bold font-monospace">
                 <i class="fa-solid fa-circle text-success me-2" style="font-size: 0.5rem; box-shadow: 0 0 8px #2ecc71;"></i>
                 {{ db_host | default(value="Conectado") }}
             </span>
         </div>
-        <a href="/" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-0" style="line-height: 28px;">
+        <a href="/" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-0 ms-3" style="line-height: 28px;">
             <i class="fa-solid fa-power-off me-2"></i>Salir
         </a>
     </div>
 </nav>
 
-<!-- ESTRUCTURA FLEX -->
+<!-- ESTRUCTURA FLEXIBLE PRINCIPAL -->
 <div class="container-fluid d-flex flex-column overflow-hidden" style="height: calc(100vh - 56px);">
-    <div class="row h-100">
-        <!-- SIDEBAR -->
-        <div class="col-12 col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm collapse d-lg-block" id="sidebarCollapse" style="z-index: 2; max-width: 400px;">
-            <div class="p-3 bg-light border-bottom flex-shrink-0">
+    <div class="row h-100 flex-nowrap"> 
+        
+        <!-- SIDEBAR (Offcanvas responsive para móviles) -->
+        <div class="offcanvas-lg offcanvas-start col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm" 
+             tabindex="-1" 
+             id="sidebarOffcanvas" 
+             aria-labelledby="sidebarLabel"
+             style="z-index: 1045;">
+            
+            <div class="offcanvas-header bg-light border-bottom d-lg-none">
+                <h5 class="offcanvas-title fw-bold text-secondary" id="sidebarLabel"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Close"></button>
+            </div>
+
+            <div class="p-3 bg-light border-bottom flex-shrink-0 d-none d-lg-block">
                 <h6 class="mb-0 fw-bold text-uppercase text-secondary small"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h6>
             </div>
             
@@ -89,33 +103,36 @@
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
+        <!-- CONTENIDO PRINCIPAL -->
         <div class="col-12 col-lg-9 h-100 p-0 flex-grow-1 d-flex flex-column position-relative">
             {% if results %}
             <!-- Header Resultados -->
             <div class="bg-white px-4 py-3 border-bottom d-flex justify-content-between align-items-center shadow-sm flex-shrink-0" style="z-index: 10;">
-                <div>
-                    <h5 class="mb-0 fw-bold text-primary">{{ results.query_title }}</h5>
-                    <div class="text-muted" style="font-size: 0.75rem;">
+                <div class="overflow-hidden">
+                    <h5 class="mb-0 fw-bold text-primary text-truncate">{{ results.query_title }}</h5>
+                    <div class="text-muted text-truncate" style="font-size: 0.75rem;">
                         <i class="fa-regular fa-clock me-1"></i>{{ results.timestamp }} 
                         <span class="mx-2">|</span> 
-                        <i class="fa-solid fa-table-list me-1"></i>{{ results.rows | length }} resultados
+                        <i class="fa-solid fa-table-list me-1"></i>{{ results.rows | length }} res.
                     </div>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-primary fw-bold" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera me-1"></i> Captura</button>
-                    <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
+                <div class="btn-group ms-2">
+                    <button class="btn btn-sm btn-outline-primary fw-bold d-none d-md-inline-block" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera me-1"></i> Captura</button>
+                    <button class="btn btn-sm btn-outline-primary fw-bold d-md-none" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera"></i></button>
+                    
+                    <button class="btn btn-sm btn-outline-success fw-bold d-none d-md-inline-block" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
+                    <button class="btn btn-sm btn-outline-success fw-bold d-md-none" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i></button>
                 </div>
             </div>
 
-            <!-- Area de Contenido -->
+            <!-- Área de Contenido -->
             <div class="d-flex flex-column flex-grow-1 overflow-hidden">
                 <div class="card h-100 border-0 rounded-0 d-flex flex-column">
                     <div class="card-header bg-light border-bottom p-2 flex-shrink-0">
                         <ul class="nav nav-pills nav-fill gap-2" id="resultTabs" role="tablist">
-                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane"><i class="fa-solid fa-circle-nodes me-2"></i>Vista Grafo</button></li>
-                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane"><i class="fa-solid fa-table me-2"></i>Vista Datos</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold small" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane"><i class="fa-solid fa-chart-simple me-2"></i>Estadísticas</button></li>
+                            <li class="nav-item"><button class="nav-link {% if results.is_graph %}active{% endif %} fw-bold small py-1" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph-pane"><i class="fa-solid fa-circle-nodes me-2"></i><span class="d-none d-sm-inline">Grafo</span></button></li>
+                            <li class="nav-item"><button class="nav-link {% if not results.is_graph %}active{% endif %} fw-bold small py-1" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane"><i class="fa-solid fa-table me-2"></i><span class="d-none d-sm-inline">Datos</span></button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold small py-1" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane"><i class="fa-solid fa-chart-simple me-2"></i><span class="d-none d-sm-inline">Stats</span></button></li>
                         </ul>
                     </div>
 
@@ -129,21 +146,23 @@
                                     <button class="btn btn-light border btn-sm" onclick="network.fit()"><i class="fa-solid fa-compress"></i></button>
                                     <button class="btn btn-light border btn-sm" onclick="network.moveTo({scale: 0.5})"><i class="fa-solid fa-minus"></i></button>
                                 </div>
-                                <div class="position-absolute bottom-0 end-0 m-3 p-2 bg-white bg-opacity-90 rounded shadow-sm border small" style="pointer-events: none; z-index: 10;">
+                                <div class="position-absolute bottom-0 end-0 m-3 p-2 bg-white bg-opacity-90 rounded shadow-sm border small d-none d-sm-block" style="pointer-events: none; z-index: 10;">
                                     <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-warning"></i> Material</span>
                                     <span class="badge rounded-pill text-bg-light border text-dark me-1"><i class="fa-solid fa-circle text-primary"></i> Equipo</span>
-                                    <span class="badge rounded-pill text-bg-light border text-dark"><i class="fa-solid fa-circle text-success"></i> Ubicación</span>
+                                    <span class="badge rounded-pill text-bg-light border text-dark"><i class="fa-solid fa-circle text-success"></i> Ubic.</span>
                                 </div>
                             </div>
-                            <!-- PANE TABLA -->
-                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 overflow-auto" id="table-pane">
-                                <div class="table-responsive">
+                            
+                            <!-- PANE TABLA (MODIFICADO PARA SCROLL COMPLETO) -->
+                            <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 p-0" id="table-pane" style="overflow: hidden;">
+                                <div class="table-responsive h-100 w-100">
                                     <table class="table table-hover table-striped table-sm mb-0 align-middle small table-bordered">
                                         <thead class="table-dark sticky-top">
                                             <tr>
-                                                <th class="text-center bg-secondary" style="width: 50px;">#</th>
+                                                <th class="text-center bg-secondary text-nowrap" style="width: 40px;">#</th>
                                                 {% for col in results.columns %}
-                                                <th class="text-uppercase">{{ col }}</th>
+                                                <!-- text-nowrap en header fuerza el ancho -->
+                                                <th class="text-uppercase text-nowrap px-3">{{ col }}</th>
                                                 {% endfor %}
                                             </tr>
                                         </thead>
@@ -152,7 +171,8 @@
                                             <tr>
                                                 <td class="text-center text-muted">{{ loop.index }}</td>
                                                 {% for col in results.columns %}
-                                                <td>
+                                                <!-- text-nowrap en celda asegura que la tabla crezca horizontalmente -->
+                                                <td class="text-nowrap px-2">
                                                     {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col or "CODIGO" in col %}
                                                         {% if row[col] != "-" and "Lista" not in row[col] %}
                                                         <div class="d-flex justify-content-between align-items-center hover-target p-1 rounded transition">
@@ -173,8 +193,9 @@
                                     </table>
                                 </div>
                             </div>
+                            
                             <!-- PANE CHART -->
-                            <div class="tab-pane fade h-100 w-100 p-4 overflow-hidden" id="chart-pane">
+                            <div class="tab-pane fade h-100 w-100 p-2 p-md-4 overflow-hidden" id="chart-pane">
                                 <div class="d-flex flex-column h-100">
                                     <h6 class="text-center text-secondary text-uppercase fw-bold mb-3" id="chart-title">Análisis de Datos</h6>
                                     <div style="flex-grow: 1; position: relative; width: 100%;">
@@ -188,13 +209,13 @@
                 </div>
             </div>
             {% else %}
-            <!-- Estado vacío -->
-            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50 bg-light">
-                <div class="bg-white p-5 rounded-circle shadow-sm mb-4">
-                    <i class="fa-solid fa-magnifying-glass-chart fa-4x text-primary opacity-50"></i>
+            <!-- Empty State -->
+            <div class="h-100 d-flex flex-column justify-content-center align-items-center text-muted opacity-50 bg-light p-4 text-center">
+                <div class="bg-white p-4 p-md-5 rounded-circle shadow-sm mb-4">
+                    <i class="fa-solid fa-magnifying-glass-chart fa-3x fa-md-4x text-primary opacity-50"></i>
                 </div>
-                <h3 class="fw-bold text-dark">Esperando Consulta</h3>
-                <p>Seleccione una consulta o use el <b>Asistente IA</b>.</p>
+                <h3 class="fw-bold text-dark fs-4">Esperando Consulta</h3>
+                <p class="small">Seleccione una consulta o use el <br><b>Asistente IA</b>.</p>
             </div>
             {% endif %}
         </div>
@@ -203,13 +224,13 @@
 
 <!-- CHAT MODAL -->
 <button class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
-        style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; z-index: 1050;"
+        style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1050;"
         data-bs-toggle="modal" data-bs-target="#aiModal">
     <i class="fa-solid fa-robot fa-xl"></i>
 </button>
 
 <div class="modal fade" id="aiModal" tabindex="-1" aria-labelledby="aiModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg" style="height: 80vh;">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="aiModalLabel"><i class="fa-solid fa-brain me-2 text-info"></i>Asistente Industrial IA</h5>
@@ -258,7 +279,7 @@
             <div class="card-body">
                 <label class="small text-muted fw-bold text-uppercase">Identificador Único</label>
                 <div class="d-flex align-items-center gap-2">
-                    <code id="canvasNodeId" class="fs-5 fw-bold text-dark"></code>
+                    <code id="canvasNodeId" class="fs-5 fw-bold text-dark text-break"></code>
                     <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('canvasNodeId').innerText)"><i class="fa-regular fa-copy"></i></button>
                 </div>
             </div>
@@ -312,6 +333,9 @@
             badge.style.display = 'inline-block';
             setTimeout(() => badge.style.display = 'none', 2000);
             bootstrap.Offcanvas.getInstance(document.getElementById('nodeOffcanvas'))?.hide();
+            const sidebarEl = document.getElementById('sidebarOffcanvas');
+            const bsSidebar = bootstrap.Offcanvas.getInstance(sidebarEl);
+            if(bsSidebar) bsSidebar.hide();
         }
     }
     function setFocusFromCanvas() { if (selectedNodeData) updateSearchParam(selectedNodeData.id, selectedNodeData.label); }
@@ -349,7 +373,6 @@
         showTyping();
 
         try {
-            // AQUI ESTÁ EL CAMBIO CRÍTICO: Usamos /api/openai_proxy en lugar de api.openai.com
             const response = await fetch("/api/openai_proxy", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
@@ -357,7 +380,7 @@
             });
             const data = await response.json();
             
-            if(data.error) throw new Error(data.error.message);
+            if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
 
             const choice = data.choices[0];
             const msg = choice.message;
@@ -385,7 +408,6 @@
                     });
                 }
 
-                // Segunda llamada al proxy
                 const finalRes = await fetch("/api/openai_proxy", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
