@@ -101,6 +101,27 @@
                 <div class="alert alert-danger mt-3 small shadow-sm border-0">{{ error }}</div>
                 {% endif %}
             </div>
+
+            <!-- FOOTER AUTOR (NUEVO) -->
+            <div class="p-3 border-top bg-white flex-shrink-0 mt-auto">
+                <a href="https://angelurbinacv.netlify.app/" target="_blank" 
+                   class="d-flex align-items-center text-decoration-none p-2 rounded" 
+                   style="color: #2c3e50; transition: background-color 0.2s;"
+                   onmouseover="this.style.backgroundColor='#f1f3f5'" 
+                   onmouseout="this.style.backgroundColor='transparent'">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <div class="lh-1">
+                        <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Desarrollado por</div>
+                        <div class="fw-bold text-dark">Angel A. Urbina</div>
+                        <div class="small text-primary opacity-75 fw-bold" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Ver CV / Contacto
+                        </div>
+                    </div>
+                </a>
+            </div>
+
         </div>
 
         <!-- CONTENIDO PRINCIPAL -->
@@ -153,7 +174,7 @@
                                 </div>
                             </div>
                             
-                            <!-- PANE TABLA (MODIFICADO PARA SCROLL COMPLETO) -->
+                            <!-- PANE TABLA -->
                             <div class="tab-pane fade {% if not results.is_graph %}show active{% endif %} h-100 p-0" id="table-pane" style="overflow: hidden;">
                                 <div class="table-responsive h-100 w-100">
                                     <table class="table table-hover table-striped table-sm mb-0 align-middle small table-bordered">
@@ -161,7 +182,6 @@
                                             <tr>
                                                 <th class="text-center bg-secondary text-nowrap" style="width: 40px;">#</th>
                                                 {% for col in results.columns %}
-                                                <!-- text-nowrap en header fuerza el ancho -->
                                                 <th class="text-uppercase text-nowrap px-3">{{ col }}</th>
                                                 {% endfor %}
                                             </tr>
@@ -171,7 +191,6 @@
                                             <tr>
                                                 <td class="text-center text-muted">{{ loop.index }}</td>
                                                 {% for col in results.columns %}
-                                                <!-- text-nowrap en celda asegura que la tabla crezca horizontalmente -->
                                                 <td class="text-nowrap px-2">
                                                     {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col or "CODIGO" in col %}
                                                         {% if row[col] != "-" and "Lista" not in row[col] %}
