@@ -1,10 +1,10 @@
 # Neo4j Industrial Graph Dashboard
-**Analítica Avanzada de Activos Industriales con Rust + Neo4j + IA**
+**Analítica Avanzada de Activos Industriales con Rust + Neo4j + GenAI Multi-Proveedor**
 
-![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust)
+![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange?logo=rust)
 ![Neo4j](https://img.shields.io/badge/Neo4j-Aura%20%2F%20Local-blue?logo=neo4j)
 ![Actix-Web](https://img.shields.io/badge/Backend-Actix_Web-green)
-![OpenAI](https://img.shields.io/badge/AI-OpenAI%20Integration-purple?logo=openai)
+![AI Providers](https://img.shields.io/badge/AI-OpenAI%20|%20Groq%20|%20DeepSeek%20|%20Ollama-purple?logo=openai)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
@@ -18,78 +18,101 @@
 # 🇪🇸 Español
 
 ## 📖 Descripción General
-**Neo4j Industrial Graph Dashboard** es una plataforma web de alto rendimiento para la visualización, auditoría y análisis de activos industriales complejos. Utiliza **Rust** para el backend, garantizando velocidad y seguridad, y **Neo4j** como base de datos de grafos para modelar relaciones jerárquicas (Plantas → Equipos → Materiales).
+**Neo4j Industrial Graph Dashboard** es una plataforma web de alto rendimiento diseñada para la visualización, auditoría y análisis de activos industriales complejos. Su arquitectura combina la seguridad y velocidad de **Rust** en el backend con la potencia de **Neo4j** para modelar relaciones jerárquicas (Plantas → Equipos → Materiales).
 
-La característica más potente es su **Asistente de IA Integrado**, que permite interrogar a la base de datos utilizando lenguaje natural, transformando preguntas complejas en ejecuciones de datos precisas.
+La característica estrella es su **Asistente de IA Universal**, capaz de traducir preguntas en lenguaje natural a consultas Cypher complejas, soportando múltiples proveedores de LLM (Nube y Local).
+
+### ✨ Características Principales
+*   **Visualización de Grafos:** Renderizado interactivo de redes de activos con `Vis.js`.
+*   **Gestión Dinámica:** Las consultas se cargan desde un archivo JSON sin recompilar el servidor.
+*   **Multi-Proveedor de IA:** Soporte nativo para OpenAI, Groq, DeepSeek y modelos locales con Ollama.
+*   **Proxy Seguro:** El backend actúa como pasarela para evitar problemas de CORS y proteger las claves API.
+
+---
+
+## 🤖 Configuración del Asistente de IA (Multi-Modelo)
+
+La aplicación incluye un chat inteligente (botón flotante 🤖) que utiliza **Function Calling** para interrogar a la base de datos. Puedes elegir tu proveedor de IA preferido haciendo clic en el botón de configuración (⚙️) dentro del chat.
+
+### Opciones de Configuración
+
+#### 1. ⚡ Groq (Recomendado por Velocidad)
+Ideal para respuestas casi instantáneas utilizando modelos Llama 3.
+*   **Proveedor:** Selecciona `Groq`.
+*   **API Key:** Obtén una gratuita en [console.groq.com](https://console.groq.com).
+*   **Modelo:** Por defecto usa `llama-3.3-70b-versatile`.
+
+#### 2. 🧠 OpenAI (Estándar)
+La opción más robusta y fiable.
+*   **Proveedor:** Selecciona `OpenAI`.
+*   **API Key:** Tu clave `sk-...` de OpenAI.
+*   **Modelo:** `gpt-4o` (por defecto).
+
+#### 3. 💻 Ollama (Privacidad Local)
+Para ejecutar modelos en tu propia máquina sin enviar datos a la nube.
+*   **Proveedor:** Selecciona `Ollama`.
+*   **Requisitos:** Tener [Ollama](https://ollama.com/) instalado.
+*   **Configuración Técnica:**
+    *   Ejecuta Ollama permitiendo orígenes: `OLLAMA_ORIGINS="*" ollama serve`
+    *   **Si usas Docker:** La URL debe ser `http://host.docker.internal:11434/v1/chat/completions`.
+    *   **Si ejecutas en local:** La URL es `http://localhost:11434/v1/chat/completions`.
+*   **Modelo:** Asegúrate de tener el modelo descargado (ej. `ollama pull llama3.2`).
+
+#### 4. 🚀 DeepSeek (Económico y Potente)
+Excelente capacidad de razonamiento (V3) a una fracción del coste.
+*   **Proveedor:** Selecciona `DeepSeek`.
+*   **API Key:** Tu clave de `platform.deepseek.com`.
+
+#### 5. 🔌 Anthropic (Claude) / Custom
+Para usar Claude 3.5 Sonnet u otros proveedores compatibles con OpenAI.
+*   **Proveedor:** Selecciona `Custom`.
+*   **Método Recomendado:** Usar **OpenRouter** como intermediario para compatibilidad de API.
+    *   **Base URL:** `https://openrouter.ai/api/v1/chat/completions`
+    *   **Modelo:** `anthropic/claude-3.5-sonnet`
 
 ---
 
 ## 🧩 Gestión de Consultas (Queries)
 
-El núcleo de la aplicación es dinámico. No es necesario modificar el código fuente en Rust para añadir nuevas analíticas; todo se gestiona desde el archivo `queries.json`.
-
-Este archivo alimenta tanto el **Menú Lateral** de la interfaz como las **Herramientas (Tools)** disponibles para la Inteligencia Artificial.
-
-### Estructura de una Consulta
-Cada objeto en `queries.json` debe seguir este esquema:
+No es necesario tocar código Rust para añadir nuevas analíticas. Todo reside en `queries.json`.
 
 ```json
 {
-  "id": "M01",                  // Identificador único (usado por la API y la IA)
-  "category": "Mantenimiento",  // Agrupación en el menú visual
-  "title": "Desglose BOM",      // Nombre visible para el usuario
-  "description": "Visualiza...",// Descripción para el usuario y contexto para la IA
-  "cypher": "MATCH ...",        // La consulta Cypher a ejecutar en Neo4j
-  "needs_param": true,          // true: Requiere un ID de nodo ($p). false: Consulta global.
-  "is_graph": true,             // true: Renderiza nodos/aristas. false: Renderiza Tabla/Gráfico.
-  "icon": "fa-share-nodes"      // Clase de icono FontAwesome 6
+  "id": "M01",
+  "category": "Mantenimiento",
+  "title": "Desglose BOM",
+  "description": "Descripción que la IA usa para entender cuándo usar esta herramienta.",
+  "cypher": "MATCH (n)-[:REL]->(m) RETURN ...",
+  "needs_param": true,  // true = Requiere seleccionar un nodo antes
+  "is_graph": true,     // true = Renderiza nodos; false = Renderiza tabla/gráfico
+  "icon": "fa-share-nodes"
 }
 ```
-
-### ➕ Cómo añadir una nueva consulta
-1. Abra el archivo `queries.json` en la raíz del proyecto.
-2. Agregue un nuevo objeto al array JSON.
-3. **Importante:** Si la consulta requiere un parámetro (ej. buscar hijos de un equipo específico), use `$p` en el código Cypher y establezca `"needs_param": true`.
-4. Guarde el archivo.
-5. **Reinicie la aplicación**. El sistema cargará la nueva consulta, la añadirá al menú y la registrará automáticamente como una nueva habilidad para el Asistente de IA.
-
-### ➖ Cómo eliminar o modificar
-* **Eliminar:** Simplemente borre el bloque JSON correspondiente y reinicie.
-* **Modificar:** Edite el campo `cypher` o `description` y reinicie. Los cambios se reflejarán instantáneamente en la capacidad de razonamiento de la IA.
+*Para añadir una consulta, simplemente edita este archivo y reinicia el servidor.*
 
 ---
 
-## 🤖 Uso de la Inteligencia Artificial
+## 🚀 Despliegue
 
-La aplicación incluye un chat inteligente (botón flotante 🤖) capaz de razonar sobre los datos industriales.
-
-### ¿Cómo funciona?
-1. **Trae tu propia clave (BYOK):** Al abrir el chat, se solicitará una API Key de OpenAI (`sk-...`). Esta clave se guarda **localmente en su navegador** (LocalStorage) y nunca se almacena en el servidor.
-2. **Definición de Herramientas:** El backend convierte automáticamente las consultas de `queries.json` en "Tools" de OpenAI.
-3. **Razonamiento:** Cuando usted pregunta *"¿Qué equipos tienen riesgo de obsolescencia?"*:
-    * La IA analiza la pregunta.
-    * Busca en su lista de herramientas y selecciona `M04` (Impacto Obsolescencia).
-    * Solicita al servidor ejecutar esa consulta.
-    * El servidor devuelve los datos JSON.
-    * La IA interpreta los datos y le responde: *"He encontrado 5 equipos en riesgo, incluyendo la Bomba P-201..."*.
-
-### Notas de Seguridad
-* Las peticiones a OpenAI pasan a través de un **Proxy en el servidor Rust** (`/api/openai_proxy`) para evitar errores de CORS y proteger la comunicación.
-* La IA solo tiene acceso de lectura a los datos que exponen las consultas definidas en `queries.json`.
-
----
-
-## 🚀 Despliegue en Render / Docker
-
-El proyecto está optimizado para contenedores.
-
+### Docker (Recomendado)
 ```bash
-# Construir y ejecutar localmente
+# Construir la imagen
 docker build -t neo4j_dashboard .
+
+# Ejecutar (Asegúrate de tener el archivo .env configurado)
 docker run -p 8080:8080 --env-file .env neo4j_dashboard
 ```
 
-Variables de entorno requeridas (`.env`):
+### Ejecución Local (Rust)
+```bash
+# Instalar dependencias
+cargo build --release
+
+# Ejecutar
+./target/release/neo4j_dashboard
+```
+
+Variables de entorno requeridas en `.env`:
 ```env
 NEO4J_URI="neo4j+s://<tu-instancia>.databases.neo4j.io"
 NEO4J_USERNAME="neo4j"
@@ -103,78 +126,101 @@ PORT=8080
 # 🇬🇧 English
 
 ## 📖 Overview
-**Neo4j Industrial Graph Dashboard** is a high-performance web platform for visualization, auditing, and analysis of complex industrial assets. It uses **Rust** for the backend, ensuring speed and safety, and **Neo4j** as a graph database to model hierarchical relationships (Plants → Equipment → Materials).
+**Neo4j Industrial Graph Dashboard** is a high-performance web platform designed for visualization, auditing, and analysis of complex industrial assets. Its architecture combines the safety and speed of **Rust** on the backend with the power of **Neo4j** to model hierarchical relationships (Plants → Equipment → Materials).
 
-Its most powerful feature is the **Integrated AI Assistant**, which allows users to query the database using natural language, transforming complex questions into precise data executions.
+The flagship feature is its **Universal AI Assistant**, capable of translating natural language questions into complex Cypher queries, supporting multiple LLM providers (Cloud & Local).
+
+### ✨ Key Features
+*   **Graph Visualization:** Interactive asset network rendering with `Vis.js`.
+*   **Dynamic Management:** Queries are loaded from a JSON file without recompiling the server.
+*   **Multi-Provider AI:** Native support for OpenAI, Groq, DeepSeek, and local models via Ollama.
+*   **Secure Proxy:** The backend acts as a gateway to prevent CORS issues and protect API keys.
+
+---
+
+## 🤖 AI Assistant Configuration (Multi-Model)
+
+The application includes a smart chat (floating button 🤖) that uses **Function Calling** to query the database. You can choose your preferred AI provider by clicking the settings button (⚙️) inside the chat.
+
+### Configuration Options
+
+#### 1. ⚡ Groq (Recommended for Speed)
+Ideal for near-instant responses using Llama 3 models.
+*   **Provider:** Select `Groq`.
+*   **API Key:** Get a free one at [console.groq.com](https://console.groq.com).
+*   **Model:** Defaults to `llama-3.3-70b-versatile`.
+
+#### 2. 🧠 OpenAI (Standard)
+The most robust and reliable option.
+*   **Provider:** Select `OpenAI`.
+*   **API Key:** Your OpenAI `sk-...` key.
+*   **Model:** `gpt-4o` (default).
+
+#### 3. 💻 Ollama (Local Privacy)
+To run models on your own machine without sending data to the cloud.
+*   **Provider:** Select `Ollama`.
+*   **Requirements:** Have [Ollama](https://ollama.com/) installed.
+*   **Technical Setup:**
+    *   Run Ollama allowing origins: `OLLAMA_ORIGINS="*" ollama serve`
+    *   **If using Docker:** URL must be `http://host.docker.internal:11434/v1/chat/completions`.
+    *   **If running locally:** URL is `http://localhost:11434/v1/chat/completions`.
+*   **Model:** Ensure you have pulled the model (e.g., `ollama pull llama3.2`).
+
+#### 4. 🚀 DeepSeek (Cost-Effective & Powerful)
+Excellent reasoning capabilities (V3) at a fraction of the cost.
+*   **Provider:** Select `DeepSeek`.
+*   **API Key:** Your key from `platform.deepseek.com`.
+
+#### 5. 🔌 Anthropic (Claude) / Custom
+To use Claude 3.5 Sonnet or other OpenAI-compatible providers.
+*   **Provider:** Select `Custom`.
+*   **Recommended Method:** Use **OpenRouter** as a middleware for API compatibility.
+    *   **Base URL:** `https://openrouter.ai/api/v1/chat/completions`
+    *   **Model:** `anthropic/claude-3.5-sonnet`
 
 ---
 
 ## 🧩 Query Management
 
-The core of the application is dynamic. There is no need to modify the Rust source code to add new analytics; everything is managed via the `queries.json` file.
-
-This file powers both the **Sidebar Menu** and the **Tools** available to the Artificial Intelligence.
-
-### Query Structure
-Each object in `queries.json` must follow this schema:
+No need to touch Rust code to add new analytics. Everything resides in `queries.json`.
 
 ```json
 {
-  "id": "M01",                  // Unique ID (used by API and AI)
-  "category": "Maintenance",    // Grouping in the visual menu
-  "title": "BOM Breakdown",     // Visible name for the user
-  "description": "Visualizes...",// Description for user & context for AI
-  "cypher": "MATCH ...",        // The Cypher query to execute in Neo4j
-  "needs_param": true,          // true: Requires a node ID ($p). false: Global query.
-  "is_graph": true,             // true: Renders nodes/edges. false: Renders Table/Chart.
-  "icon": "fa-share-nodes"      // FontAwesome 6 icon class
+  "id": "M01",
+  "category": "Maintenance",
+  "title": "BOM Breakdown",
+  "description": "Description the AI uses to understand when to use this tool.",
+  "cypher": "MATCH (n)-[:REL]->(m) RETURN ...",
+  "needs_param": true,  // true = Requires selecting a node first
+  "is_graph": true,     // true = Renders nodes; false = Renders table/chart
+  "icon": "fa-share-nodes"
 }
 ```
-
-### ➕ How to add a new query
-1. Open the `queries.json` file in the project root.
-2. Add a new object to the JSON array.
-3. **Important:** If the query requires a parameter (e.g., finding children of a specific equipment), use `$p` in the Cypher code and set `"needs_param": true`.
-4. Save the file.
-5. **Restart the application**. The system will load the new query, add it to the menu, and automatically register it as a new skill for the AI Assistant.
-
-### ➖ How to remove or modify
-* **Remove:** Simply delete the corresponding JSON block and restart.
-* **Modify:** Edit the `cypher` or `description` field and restart. Changes will instantly reflect in the AI's reasoning capabilities.
+*To add a query, simply edit this file and restart the server.*
 
 ---
 
-## 🤖 AI Usage
+## 🚀 Deployment
 
-The application includes a smart chat (floating button 🤖) capable of reasoning over industrial data.
-
-### How does it work?
-1. **Bring Your Own Key (BYOK):** Upon opening the chat, you will be asked for an OpenAI API Key (`sk-...`). This key is stored **locally in your browser** (LocalStorage) and is never stored on the server.
-2. **Tool Definition:** The backend automatically converts queries from `queries.json` into OpenAI "Tools".
-3. **Reasoning:** When you ask *"Which equipment is at risk of obsolescence?"*:
-    * The AI analyzes the question.
-    * It searches its tool list and selects `M04` (Obsolescence Impact).
-    * It requests the server to execute that query.
-    * The server returns raw JSON data.
-    * The AI interprets the data and answers: *"I found 5 equipment items at risk, including Pump P-201..."*.
-
-### Security Notes
-* Requests to OpenAI pass through a **Rust Server Proxy** (`/api/openai_proxy`) to prevent CORS errors and secure communication.
-* The AI only has read access to data exposed by the queries defined in `queries.json`.
-
----
-
-## 🚀 Deployment on Render / Docker
-
-The project is container-optimized.
-
+### Docker (Recommended)
 ```bash
-# Build and run locally
+# Build the image
 docker build -t neo4j_dashboard .
+
+# Run (Ensure you have the .env file configured)
 docker run -p 8080:8080 --env-file .env neo4j_dashboard
 ```
 
-Required environment variables (`.env`):
+### Local Execution (Rust)
+```bash
+# Install dependencies & Build
+cargo build --release
+
+# Run
+./target/release/neo4j_dashboard
+```
+
+Required environment variables in `.env`:
 ```env
 NEO4J_URI="neo4j+s://<your-instance>.databases.neo4j.io"
 NEO4J_USERNAME="neo4j"
@@ -188,78 +234,101 @@ PORT=8080
 # 🏴 Català
 
 ## 📖 Descripció General
-**Neo4j Industrial Graph Dashboard** és una plataforma web d'alt rendiment per a la visualització, auditoria i anàlisi d'actius industrials complexos. Utilitza **Rust** per al backend, garantint velocitat i seguretat, i **Neo4j** com a base de dades de grafs per modelar relacions jeràrquiques (Plantes → Equips → Materials).
+**Neo4j Industrial Graph Dashboard** és una plataforma web d'alt rendiment dissenyada per a la visualització, auditoria i anàlisi d'actius industrials complexos. La seva arquitectura combina la seguretat i velocitat de **Rust** al backend amb la potència de **Neo4j** per modelar relacions jeràrquiques (Plantes → Equips → Materials).
 
-La característica més potent és el seu **Assistent d'IA Integrat**, que permet interrogar la base de dades utilitzant llenguatge natural, transformant preguntes complexes en execucions de dades precises.
+La característica estrella és el seu **Assistent d'IA Universal**, capaç de traduir preguntes en llenguatge natural a consultes Cypher complexes, suportant múltiples proveïdors de LLM (Núvol i Local).
+
+### ✨ Característiques Principals
+*   **Visualització de Grafs:** Renderització interactiva de xarxes d'actius amb `Vis.js`.
+*   **Gestió Dinàmica:** Les consultes es carreguen des d'un fitxer JSON sense recompilar el servidor.
+*   **Multi-Proveïdor d'IA:** Suport natiu per a OpenAI, Groq, DeepSeek i models locals amb Ollama.
+*   **Proxy Segur:** El backend actua com a passarel·la per evitar problemes de CORS i protegir les claus API.
+
+---
+
+## 🤖 Configuració de l'Assistent d'IA (Multi-Model)
+
+L'aplicació inclou un xat intel·ligent (botó flotant 🤖) que utilitza **Function Calling** per interrogar la base de dades. Pots triar el teu proveïdor d'IA preferit fent clic al botó de configuració (⚙️) dins del xat.
+
+### Opcions de Configuració
+
+#### 1. ⚡ Groq (Recomanat per Velocitat)
+Ideal per a respostes gairebé instantànies utilitzant models Llama 3.
+*   **Proveïdor:** Selecciona `Groq`.
+*   **API Key:** Aconsegueix-ne una gratuïta a [console.groq.com](https://console.groq.com).
+*   **Model:** Per defecte utilitza `llama-3.3-70b-versatile`.
+
+#### 2. 🧠 OpenAI (Estàndard)
+L'opció més robusta i fiable.
+*   **Proveïdor:** Selecciona `OpenAI`.
+*   **API Key:** La teva clau `sk-...` d'OpenAI.
+*   **Model:** `gpt-4o` (per defecte).
+
+#### 3. 💻 Ollama (Privadesa Local)
+Per executar models a la teva pròpia màquina sense enviar dades al núvol.
+*   **Proveïdor:** Selecciona `Ollama`.
+*   **Requisits:** Tenir [Ollama](https://ollama.com/) instal·lat.
+*   **Configuració Tècnica:**
+    *   Executa Ollama permetent orígens: `OLLAMA_ORIGINS="*" ollama serve`
+    *   **Si utilitzes Docker:** La URL ha de ser `http://host.docker.internal:11434/v1/chat/completions`.
+    *   **Si executes en local:** La URL és `http://localhost:11434/v1/chat/completions`.
+*   **Model:** Assegura't de tenir el model descarregat (ex. `ollama pull llama3.2`).
+
+#### 4. 🚀 DeepSeek (Econòmic i Potent)
+Excel·lent capacitat de raonament (V3) a una fracció del cost.
+*   **Proveïdor:** Selecciona `DeepSeek`.
+*   **API Key:** La teva clau de `platform.deepseek.com`.
+
+#### 5. 🔌 Anthropic (Claude) / Custom
+Per utilitzar Claude 3.5 Sonnet o altres proveïdors compatibles amb OpenAI.
+*   **Proveïdor:** Selecciona `Custom`.
+*   **Mètode Recomanat:** Utilitzar **OpenRouter** com a intermediari per a compatibilitat d'API.
+    *   **Base URL:** `https://openrouter.ai/api/v1/chat/completions`
+    *   **Model:** `anthropic/claude-3.5-sonnet`
 
 ---
 
 ## 🧩 Gestió de Consultes (Queries)
 
-El nucli de l'aplicació és dinàmic. No cal modificar el codi font en Rust per afegir noves analítiques; tot es gestiona des del fitxer `queries.json`.
-
-Aquest fitxer alimenta tant el **Menú Lateral** de la interfície com les **Eines (Tools)** disponibles per a la Intel·ligència Artificial.
-
-### Estructura d'una Consulta
-Cada objecte a `queries.json` ha de seguir aquest esquema:
+No cal tocar codi Rust per afegir noves analítiques. Tot resideix a `queries.json`.
 
 ```json
 {
-  "id": "M01",                  // Identificador únic (usat per l'API i la IA)
-  "category": "Manteniment",    // Agrupació al menú visual
-  "title": "Desglossament BOM", // Nom visible per a l'usuari
-  "description": "Visualitza...",// Descripció per l'usuari i context per a la IA
-  "cypher": "MATCH ...",        // La consulta Cypher a executar a Neo4j
-  "needs_param": true,          // true: Requereix un ID de node ($p). false: Consulta global.
-  "is_graph": true,             // true: Renderitza nodes/arestes. false: Renderitza Taula/Gràfic.
-  "icon": "fa-share-nodes"      // Classe d'icona FontAwesome 6
+  "id": "M01",
+  "category": "Manteniment",
+  "title": "Desglossament BOM",
+  "description": "Descripció que la IA utilitza per entendre quan fer servir aquesta eina.",
+  "cypher": "MATCH (n)-[:REL]->(m) RETURN ...",
+  "needs_param": true,  // true = Requereix seleccionar un node abans
+  "is_graph": true,     // true = Renderitza nodes; false = Renderitza taula/gràfic
+  "icon": "fa-share-nodes"
 }
 ```
-
-### ➕ Com afegir una nova consulta
-1. Obriu el fitxer `queries.json` a l'arrel del projecte.
-2. Afegiu un nou objecte a l'array JSON.
-3. **Important:** Si la consulta requereix un paràmetre (ex. buscar fills d'un equip específic), utilitzeu `$p` al codi Cypher i establiu `"needs_param": true`.
-4. Deseu el fitxer.
-5. **Reinicieu l'aplicació**. El sistema carregarà la nova consulta, l'afegirà al menú i la registrarà automàticament com una nova habilitat per a l'Assistent d'IA.
-
-### ➖ Com eliminar o modificar
-* **Eliminar:** Simplement esborreu el bloc JSON corresponent i reinicieu.
-* **Modificar:** Editeu el camp `cypher` o `description` i reinicieu. Els canvis es reflectiran instantàniament en la capacitat de raonament de la IA.
+*Per afegir una consulta, simplement edita aquest fitxer i reinicia el servidor.*
 
 ---
 
-## 🤖 Ús de la Intel·ligència Artificial
+## 🚀 Desplegament
 
-L'aplicació inclou un xat intel·ligent (botó flotant 🤖) capaç de raonar sobre les dades industrials.
-
-### Com funciona?
-1. **Porta la teva pròpia clau (BYOK):** En obrir el xat, se sol·licitarà una API Key d'OpenAI (`sk-...`). Aquesta clau es desa **localment al vostre navegador** (LocalStorage) i mai s'emmagatzema al servidor.
-2. **Definició d'Eines:** El backend converteix automàticament les consultes de `queries.json` en "Tools" d'OpenAI.
-3. **Raonament:** Quan pregunteu *"Quins equips tenen risc d'obsolescència?"*:
-    * La IA analitza la pregunta.
-    * Cerca a la seva llista d'eines i selecciona `M04` (Impacte Obsolescència).
-    * Sol·licita al servidor executar aquesta consulta.
-    * El servidor retorna les dades JSON.
-    * La IA interpreta les dades i respon: *"He trobat 5 equips en risc, incloent-hi la Bomba P-201..."*.
-
-### Notes de Seguretat
-* Les peticions a OpenAI passen a través d'un **Proxy al servidor Rust** (`/api/openai_proxy`) per evitar errors de CORS i protegir la comunicació.
-* La IA només té accés de lectura a les dades que exposen les consultes definides a `queries.json`.
-
----
-
-## 🚀 Desplegament a Render / Docker
-
-El projecte està optimitzat per a contenidors.
-
+### Docker (Recomanat)
 ```bash
-# Construir i executar localment
+# Construir la imatge
 docker build -t neo4j_dashboard .
+
+# Executar (Assegura't de tenir el fitxer .env configurat)
 docker run -p 8080:8080 --env-file .env neo4j_dashboard
 ```
 
-Variables d'entorn requerides (`.env`):
+### Execució Local (Rust)
+```bash
+# Instal·lar dependències i compilar
+cargo build --release
+
+# Executar
+./target/release/neo4j_dashboard
+```
+
+Variables d'entorn requerides a `.env`:
 ```env
 NEO4J_URI="neo4j+s://<la-teva-instancia>.databases.neo4j.io"
 NEO4J_USERNAME="neo4j"
