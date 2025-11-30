@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, HttpResponse, Responder, http::header};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder, http::header, HttpRequest};
 use neo4rs::*;
 use serde::{Deserialize, Serialize};
 use tera::{Tera, Context};
@@ -7,7 +7,7 @@ use std::collections::{HashMap, BTreeMap};
 use dotenv::dotenv;
 use std::env;
 
-// Importamos el módulo de consultas
+// Importamos consultas
 mod queries;
 use queries::{load_queries_from_file, QueryDefinition};
 
@@ -20,6 +20,7 @@ struct AppState {
     db_host: Mutex<String>, 
     tera: Tera,
     queries: Vec<QueryDefinition>,
+    http_client: reqwest::Client, // <--- NUEVO CLIENTE HTTP
 }
 
 #[derive(Deserialize)]
@@ -56,7 +57,7 @@ struct QueryResult {
     is_graph: bool,
 }
 
-// Estructuras para la API de IA (Tools)
+// Estructuras AI
 #[derive(Serialize)]
 struct OpenAITool {
     #[serde(rename = "type")]
@@ -86,12 +87,11 @@ async fn get_node_name(graph: &Graph, id: &str) -> String {
     id.to_string()
 }
 
-// Función auxiliar para reconexión automática si se cae la sesión
 async fn ensure_graph_connection(data: &web::Data<AppState>) -> Option<Graph> {
     let mut graph_option = data.graph.lock().await;
     
-    if graph_option.is_some() {
-        return graph_option.clone();
+    if let Some(g) = graph_option.as_ref() {
+        return Some(g.clone());
     }
 
     println!("🔄 API: Intentando reconexión automática vía ENV...");
@@ -193,7 +193,6 @@ async fn search_nodes(data: web::Data<AppState>, info: web::Query<SearchParams>)
 }
 
 async fn dashboard(data: web::Data<AppState>) -> impl Responder {
-    // Verificamos conexión o intentamos reconectar
     if ensure_graph_connection(&data).await.is_none() {
         return HttpResponse::SeeOther().append_header((header::LOCATION, "/")).finish();
     }
@@ -218,17 +217,12 @@ async fn dashboard(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-// ---------------------------------------------------------
-// API: EJECUCIÓN DE CONSULTAS (Usado por Dashboard y AI)
-// ---------------------------------------------------------
 async fn api_execute_query(data: web::Data<AppState>, body: web::Json<QueryParams>) -> impl Responder {
     let graph = match ensure_graph_connection(&data).await {
         Some(g) => g,
         None => return HttpResponse::ServiceUnavailable().json(serde_json::json!({"error": "Base de datos no conectada"})),
     };
 
-    // Buscar la definición de la query
-    // Nota: El frontend puede enviar IDs en minúsculas/mayúsculas, normalizamos
     let query_def = match data.queries.iter().find(|q| q.id.to_uppercase() == body.query_id.to_uppercase()) {
         Some(q) => q.clone(),
         None => return HttpResponse::NotFound().json(serde_json::json!({"error": format!("Query ID '{}' no encontrado", body.query_id)})),
@@ -269,9 +263,7 @@ async fn api_execute_query(data: web::Data<AppState>, body: web::Json<QueryParam
     }
 }
 
-// Handler legado para form post tradicional (mantiene compatibilidad)
 async fn execute_query_form(data: web::Data<AppState>, form: web::Form<QueryParams>) -> impl Responder {
-    // Reutilizamos la lógica, simplemente renderizamos HTML al final
     let graph = match ensure_graph_connection(&data).await {
         Some(g) => g,
         None => return HttpResponse::Unauthorized().body("DB desconectada"),
@@ -290,7 +282,6 @@ async fn execute_query_form(data: web::Data<AppState>, form: web::Form<QueryPara
     let host_info = data.db_host.lock().await;
     ctx.insert("db_host", &*host_info);
     
-    // Recargar menú
     let mut grouped: BTreeMap<String, Vec<QueryDefinition>> = BTreeMap::new();
     for q in &data.queries {
         grouped.entry(q.category.to_string()).or_insert(Vec::new()).push(q.clone());
@@ -318,7 +309,6 @@ async fn execute_query_form(data: web::Data<AppState>, form: web::Form<QueryPara
                 let map: HashMap<String, serde_json::Value> = row.to().unwrap_or_default();
                 if columns.is_empty() {
                     let mut keys: Vec<String> = map.keys().cloned().collect();
-                    // Ordenar columnas inteligentemente
                     keys.sort_by(|a, b| {
                         let priority_a = if a.contains("ID") { 0 } else if a.contains("LABEL") || a.contains("NOMBRE") { 1 } else { 2 };
                         let priority_b = if b.contains("ID") { 0 } else if b.contains("LABEL") || b.contains("NOMBRE") { 1 } else { 2 };
@@ -366,11 +356,7 @@ async fn execute_query_form(data: web::Data<AppState>, form: web::Form<QueryPara
     }
 }
 
-// ---------------------------------------------------------
-// API: GENERADOR DE HERRAMIENTAS (Tools Definitions)
-// ---------------------------------------------------------
 async fn api_get_tools(data: web::Data<AppState>) -> impl Responder {
-    // Generamos dinámicamente el esquema JSON que espera OpenAI/MCP
     let tools: Vec<OpenAITool> = data.queries.iter().map(|q| {
         let params = if q.needs_param {
             serde_json::json!({
@@ -378,7 +364,7 @@ async fn api_get_tools(data: web::Data<AppState>) -> impl Responder {
                 "properties": {
                     "param": {
                         "type": "string",
-                        "description": "El ID del nodo (Equipo, Material, UbicacionTecnica) sobre el que ejecutar el análisis."
+                        "description": "El ID exacto del nodo (Equipo, Material o Ubicación)."
                     }
                 },
                 "required": ["param"]
@@ -404,6 +390,43 @@ async fn api_get_tools(data: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(tools)
 }
 
+// ---------------------------------------------------------------------
+// 👇👇👇 NUEVO PROXY PARA OPENAI (Soluciona el problema de CORS) 👇👇👇
+// ---------------------------------------------------------------------
+async fn proxy_openai(
+    req: HttpRequest, 
+    body: web::Json<serde_json::Value>,
+    data: web::Data<AppState>
+) -> impl Responder {
+    // 1. Extraer el header Authorization del frontend (donde va la Key del usuario)
+    let auth_header = match req.headers().get("Authorization") {
+        Some(h) => h,
+        None => return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Falta API Key"})),
+    };
+
+    // 2. Hacer la petición a OpenAI DESDE EL SERVIDOR (Rust -> OpenAI)
+    // Los servidores no tienen CORS, así que esto funciona siempre.
+    let response = data.http_client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", auth_header)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await;
+
+    // 3. Devolver la respuesta de OpenAI tal cual al frontend
+    match response {
+        Ok(res) => {
+            let status = res.status();
+            let json_body: serde_json::Value = res.json().await.unwrap_or_default();
+            HttpResponse::build(status).json(json_body)
+        },
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": format!("Error contactando OpenAI: {}", e)}))
+        }
+    }
+}
+
 // ==========================================
 // 4. MAIN
 // ==========================================
@@ -419,14 +442,13 @@ async fn main() -> std::io::Result<()> {
         db_host: Mutex::new(String::new()),
         tera,
         queries: loaded_queries,
+        http_client: reqwest::Client::new(), // Inicializamos el cliente HTTP
     });
     
-    // Configuración de Puerto para Render
     let port_str = env::var("PORT").unwrap_or_else(|_| "8081".to_string());
     let port = port_str.parse::<u16>().expect("PORT debe ser un número válido");
 
     println!("🚀 SERVIDOR INICIADO EN: 0.0.0.0:{}", port);
-    println!("🤖 API AI Tools disponible en /api/ai/tools");
     
     HttpServer::new(move || {
         App::new()
@@ -434,11 +456,12 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/connect", web::post().to(connect_db))
             .route("/dashboard", web::get().to(dashboard))
-            // Endpoints API
-            .route("/query", web::post().to(execute_query_form)) // Form HTML tradicional
-            .route("/api/execute", web::post().to(api_execute_query)) // JSON para AI
-            .route("/api/ai/tools", web::get().to(api_get_tools)) // Definiciones para AI
+            .route("/query", web::post().to(execute_query_form))
+            .route("/api/execute", web::post().to(api_execute_query))
+            .route("/api/ai/tools", web::get().to(api_get_tools))
             .route("/api/search", web::get().to(search_nodes))
+            // 👇 NUEVA RUTA PROXY 👇
+            .route("/api/openai_proxy", web::post().to(proxy_openai))
     })
     .bind(("0.0.0.0", port))? 
     .run()
