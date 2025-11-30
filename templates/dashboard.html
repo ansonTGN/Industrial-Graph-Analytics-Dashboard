@@ -32,16 +32,15 @@
 <div class="container-fluid d-flex flex-column overflow-hidden" style="height: calc(100vh - 56px);">
     <div class="row h-100 flex-nowrap"> 
         
-        <!-- SIDEBAR (Offcanvas responsive para móviles) -->
+        <!-- SIDEBAR -->
         <div class="offcanvas-lg offcanvas-start col-lg-3 h-100 p-0 bg-white border-end d-flex flex-column shadow-sm" 
              tabindex="-1" 
              id="sidebarOffcanvas" 
-             aria-labelledby="sidebarLabel"
              style="z-index: 1045;">
             
             <div class="offcanvas-header bg-light border-bottom d-lg-none">
-                <h5 class="offcanvas-title fw-bold text-secondary" id="sidebarLabel"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Close"></button>
+                <h5 class="offcanvas-title fw-bold text-secondary"><i class="fa-solid fa-sliders me-2"></i>Panel de Control</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas"></button>
             </div>
 
             <div class="p-3 bg-light border-bottom flex-shrink-0 d-none d-lg-block">
@@ -102,7 +101,7 @@
                 {% endif %}
             </div>
 
-            <!-- FOOTER AUTOR (NUEVO) -->
+            <!-- FOOTER AUTOR -->
             <div class="p-3 border-top bg-white flex-shrink-0 mt-auto">
                 <a href="https://angelurbinacv.netlify.app/" target="_blank" 
                    class="d-flex align-items-center text-decoration-none p-2 rounded" 
@@ -139,10 +138,7 @@
                 </div>
                 <div class="btn-group ms-2">
                     <button class="btn btn-sm btn-outline-primary fw-bold d-none d-md-inline-block" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera me-1"></i> Captura</button>
-                    <button class="btn btn-sm btn-outline-primary fw-bold d-md-none" onclick="downloadGraphPNG()"><i class="fa-solid fa-camera"></i></button>
-                    
                     <button class="btn btn-sm btn-outline-success fw-bold d-none d-md-inline-block" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
-                    <button class="btn btn-sm btn-outline-success fw-bold d-md-none" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i></button>
                 </div>
             </div>
 
@@ -192,11 +188,11 @@
                                                 <td class="text-center text-muted">{{ loop.index }}</td>
                                                 {% for col in results.columns %}
                                                 <td class="text-nowrap px-2">
-                                                    {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col or "CODIGO" in col %}
+                                                    {% if "ID" in col or "EQUIPO" == col or "MATERIAL" == col or "TAG" in col %}
                                                         {% if row[col] != "-" and "Lista" not in row[col] %}
                                                         <div class="d-flex justify-content-between align-items-center hover-target p-1 rounded transition">
                                                             <span class="fw-bold font-monospace text-dark">{{ row[col] }}</span>
-                                                            <button class="btn btn-link btn-sm p-0 ms-2 text-decoration-none" onclick="updateSearchParam('{{ row[col] }}', '{{ row[col] }} ({{ col }})')" title="Usar como objetivo"><i class="fa-solid fa-crosshairs text-primary"></i></button>
+                                                            <button class="btn btn-link btn-sm p-0 ms-2" onclick="updateSearchParam('{{ row[col] }}', '{{ row[col] }} ({{ col }})')"><i class="fa-solid fa-crosshairs text-primary"></i></button>
                                                         </div>
                                                         {% else %}
                                                             {{ row[col] }}
@@ -214,7 +210,7 @@
                             </div>
                             
                             <!-- PANE CHART -->
-                            <div class="tab-pane fade h-100 w-100 p-2 p-md-4 overflow-hidden" id="chart-pane">
+                            <div class="tab-pane fade h-100 w-100 p-4" id="chart-pane">
                                 <div class="d-flex flex-column h-100">
                                     <h6 class="text-center text-secondary text-uppercase fw-bold mb-3" id="chart-title">Análisis de Datos</h6>
                                     <div style="flex-grow: 1; position: relative; width: 100%;">
@@ -241,42 +237,117 @@
     </div>
 </div>
 
-<!-- CHAT MODAL -->
+<!-- CHAT MODAL MEJORADO -->
 <button class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
-        style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1050;"
+        style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; z-index: 1050; transition: transform 0.2s;"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
         data-bs-toggle="modal" data-bs-target="#aiModal">
     <i class="fa-solid fa-robot fa-xl"></i>
 </button>
 
-<div class="modal fade" id="aiModal" tabindex="-1" aria-labelledby="aiModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
-        <div class="modal-content border-0 shadow-lg" style="height: 80vh;">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title fw-bold" id="aiModalLabel"><i class="fa-solid fa-brain me-2 text-info"></i>Asistente Industrial IA</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body bg-light d-flex flex-column p-0">
-                <div id="apiKeyConfig" class="p-4 bg-white border-bottom">
-                    <label class="form-label fw-bold text-secondary small">TU CLAVE API DE OPENAI</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
-                        <input type="password" id="openaiKeyInput" class="form-control" placeholder="sk-...">
-                        <button class="btn btn-outline-primary" onclick="saveKey()">Guardar</button>
-                    </div>
-                    <div class="form-text small">La clave se guarda solo en tu navegador para realizar las consultas.</div>
+<div class="modal fade" id="aiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="height: 85vh;">
+            <!-- Header con Configuración -->
+            <div class="modal-header bg-dark text-white py-2">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-brain me-2 text-info"></i>
+                    <h5 class="modal-title fw-bold fs-6">Asistente Industrial</h5>
                 </div>
-                <div id="chatArea" class="flex-grow-1 overflow-auto p-3" style="display: none;">
-                    <div class="d-flex align-items-start mb-3">
-                        <div class="bg-primary text-white rounded p-3 shadow-sm" style="max-width: 80%;">
-                            Hola, soy tu asistente de base de datos. Tengo acceso a las {{ categorized_queries | length }} categorías de herramientas. ¿Qué necesitas saber sobre la planta?
+                <div class="ms-auto d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#configPanel" aria-expanded="false" title="Configurar Proveedor">
+                        <i class="fa-solid fa-gear"></i> Config
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+
+            <!-- Panel de Configuración (Colapsable) -->
+            <div class="collapse bg-light border-bottom p-3" id="configPanel">
+                <div class="row g-2">
+                    <div class="col-12 mb-2">
+                        <label class="form-label fw-bold small text-secondary">PROVEEDOR</label>
+                        <select id="aiProviderSelect" class="form-select form-select-sm" onchange="updateProviderSettings()">
+                            <option value="openai">OpenAI (GPT-4o/Turbo)</option>
+                            <option value="groq">Groq (Llama3/Mixtral) - Ultra Rápido</option>
+                            <option value="deepseek">DeepSeek (V2/Coder) - Económico</option>
+                            <option value="ollama">Ollama (Local - Llama3/Phi3)</option>
+                            <option value="custom">Compatible OpenAI (Custom/Anthropic Proxy)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-secondary">BASE URL</label>
+                        <input type="text" id="aiBaseUrl" class="form-control form-control-sm font-monospace" placeholder="https://api.openai.com/v1/chat/completions">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-secondary">NOMBRE DEL MODELO</label>
+                        <input type="text" id="aiModelName" class="form-control form-control-sm font-monospace" placeholder="gpt-4o">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-secondary">API KEY</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                            <input type="password" id="aiApiKey" class="form-control" placeholder="sk-...">
+                            <button class="btn btn-primary" onclick="saveAiConfig()"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar</button>
+                        </div>
+                    </div>
+
+                    <!-- AYUDA COLAPSABLE -->
+                    <div class="col-12 mt-3">
+                        <div class="accordion accordion-flush border rounded" id="helpAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 small fw-bold bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#helpContent">
+                                        <i class="fa-solid fa-circle-question text-info me-2"></i> Ayuda: Configuración de Proveedores
+                                    </button>
+                                </h2>
+                                <div id="helpContent" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                    <div class="accordion-body small text-muted bg-white">
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="mb-2">
+                                                <strong><i class="fa-solid fa-laptop-code"></i> Ollama (Local):</strong><br>
+                                                Si usas Docker, la URL debe ser <code>http://host.docker.internal:11434/v1/chat/completions</code>.<br>
+                                                Si ejecutas la app nativa, usa <code>http://localhost:11434...</code>.
+                                                Asegúrate de ejecutar ollama con <code>OLLAMA_ORIGINS="*" ollama serve</code>.
+                                            </li>
+                                            <li class="mb-2">
+                                                <strong><i class="fa-solid fa-bolt"></i> Groq:</strong><br>
+                                                Extremadamente rápido. Consigue tu API Key en <a href="https://console.groq.com" target="_blank">console.groq.com</a>.
+                                                Modelo recomendado: <code>llama3-70b-8192</code>.
+                                            </li>
+                                            <li class="mb-2">
+                                                <strong><i class="fa-solid fa-brain"></i> Anthropic (Claude):</strong><br>
+                                                Usa el proveedor "Custom" y conecta a través de <strong>OpenRouter</strong> (recomendado por compatibilidad).
+                                                URL: <code>https://openrouter.ai/api/v1/chat/completions</code>.
+                                                Modelo: <code>anthropic/claude-3.5-sonnet</code>.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div id="inputArea" class="p-3 bg-white border-top" style="display: none;">
-                    <div class="input-group">
-                        <input type="text" id="userPrompt" class="form-control" placeholder="Ej: ¿Cuáles son los equipos críticos?" onkeypress="handleEnter(event)">
-                        <button class="btn btn-primary" onclick="sendPrompt()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+
+            <!-- Cuerpo del Chat -->
+            <div class="modal-body bg-light d-flex flex-column p-0">
+                <div id="chatArea" class="flex-grow-1 overflow-auto p-3">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-white text-dark border rounded p-3 shadow-sm" style="max-width: 85%;">
+                            <div class="fw-bold small text-primary mb-1"><i class="fa-solid fa-robot me-1"></i> Sistema</div>
+                            Hola. Soy tu asistente conectado al grafo industrial.
+                            <br><span class="text-muted small">Configura tu proveedor arriba (⚙️) para empezar.</span>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="modal-footer p-2 bg-white border-top">
+                <div class="input-group">
+                    <input type="text" id="userPrompt" class="form-control border-0 bg-light" placeholder="Pregunta sobre equipos, repuestos, riesgos..." onkeypress="handleEnter(event)">
+                    <button class="btn btn-primary px-4" onclick="sendPrompt()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -317,9 +388,25 @@
     let tomSelectInstance;
     let network = null;
     let selectedNodeData = null; 
-    let OPENAI_API_KEY = localStorage.getItem("openai_key");
+
+    // ---- CONFIGURACIÓN IA ----
+    const PROVIDERS = {
+        openai: { url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o" },
+        groq: { url: "https://api.groq.com/openai/v1/chat/completions", model: "llama3-70b-8192" },
+        deepseek: { url: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
+        ollama: { url: "http://localhost:11434/v1/chat/completions", model: "llama3" },
+        custom: { url: "", model: "" }
+    };
+
+    let aiConfig = {
+        provider: 'openai',
+        baseUrl: PROVIDERS.openai.url,
+        model: PROVIDERS.openai.model,
+        key: ''
+    };
+
+    let chatHistory = [{role: "system", content: "Eres un experto en ingeniería de mantenimiento y análisis de grafos industrial. Tienes acceso a herramientas (funciones) que ejecutan consultas Cypher en Neo4j. Usa estas herramientas para responder preguntas basándote en datos reales."}];
     let availableTools = null;
-    let chatHistory = [{role: "system", content: "Eres un experto en ingeniería de mantenimiento y análisis de grafos industrial. Tienes acceso a herramientas (funciones) que ejecutan consultas Cypher en Neo4j. Usa estas herramientas para responder preguntas basándote en datos reales. Si el usuario pregunta algo general, intenta buscar la herramienta más adecuada. Si una respuesta contiene una lista de equipos o materiales, preséntala de forma ordenada."}];
 
     document.addEventListener("DOMContentLoaded", function(){
         tomSelectInstance = new TomSelect("#select-param", {
@@ -331,46 +418,49 @@
             render: { option: (item, escape) => `<div class="py-2 border-bottom"><span class="badge bg-secondary me-2">${escape(item.label)}</span><span class="fw-bold">${escape(item.title)}</span></div>` }
         });
 
-        if(OPENAI_API_KEY) {
-            document.getElementById('apiKeyConfig').style.display = 'none';
-            document.getElementById('chatArea').style.display = 'block';
-            document.getElementById('inputArea').style.display = 'block';
-            loadTools();
+        // Cargar Config IA
+        const savedConfig = localStorage.getItem("ai_config");
+        if(savedConfig) {
+            aiConfig = JSON.parse(savedConfig);
+            document.getElementById('aiProviderSelect').value = aiConfig.provider || 'openai';
+            document.getElementById('aiBaseUrl').value = aiConfig.baseUrl;
+            document.getElementById('aiModelName').value = aiConfig.model;
+            document.getElementById('aiApiKey').value = aiConfig.key;
+        } else {
+            updateProviderSettings();
         }
-        
+
+        loadTools();
+
         {% if current_query %}
             const activeRadio = document.querySelector('input[name="query_id"][value="{{ current_query }}"]');
             if(activeRadio) new bootstrap.Collapse(activeRadio.closest('.accordion-collapse'), { toggle: true });
         {% endif %}
     });
 
-    function updateSearchParam(id, label) {
-        if(tomSelectInstance) {
-            tomSelectInstance.addOption({id: id, title: label, label: 'Selección Manual'});
-            tomSelectInstance.setValue(id);
-            const badge = document.getElementById('target-badge');
-            badge.style.display = 'inline-block';
-            setTimeout(() => badge.style.display = 'none', 2000);
-            bootstrap.Offcanvas.getInstance(document.getElementById('nodeOffcanvas'))?.hide();
-            const sidebarEl = document.getElementById('sidebarOffcanvas');
-            const bsSidebar = bootstrap.Offcanvas.getInstance(sidebarEl);
-            if(bsSidebar) bsSidebar.hide();
+    // ---- FUNCIONES UI ----
+    function updateProviderSettings() {
+        const provider = document.getElementById('aiProviderSelect').value;
+        if (provider !== 'custom') {
+            document.getElementById('aiBaseUrl').value = PROVIDERS[provider].url;
+            document.getElementById('aiModelName').value = PROVIDERS[provider].model;
         }
     }
-    function setFocusFromCanvas() { if (selectedNodeData) updateSearchParam(selectedNodeData.id, selectedNodeData.label); }
 
-    function saveKey() {
-        const key = document.getElementById('openaiKeyInput').value.trim();
-        if(key.startsWith('sk-')) {
-            localStorage.setItem("openai_key", key);
-            OPENAI_API_KEY = key;
-            document.getElementById('apiKeyConfig').style.display = 'none';
-            document.getElementById('chatArea').style.display = 'block';
-            document.getElementById('inputArea').style.display = 'block';
-            loadTools();
-        } else {
-            alert("La clave no parece válida (debe empezar por sk-)");
+    function saveAiConfig() {
+        aiConfig.provider = document.getElementById('aiProviderSelect').value;
+        aiConfig.baseUrl = document.getElementById('aiBaseUrl').value;
+        aiConfig.model = document.getElementById('aiModelName').value;
+        aiConfig.key = document.getElementById('aiApiKey').value;
+
+        if(!aiConfig.baseUrl || !aiConfig.model) {
+            alert("La URL Base y el Modelo son obligatorios.");
+            return;
         }
+        localStorage.setItem("ai_config", JSON.stringify(aiConfig));
+        const bsCollapse = new bootstrap.Collapse(document.getElementById('configPanel'), { toggle: false });
+        bsCollapse.hide();
+        appendMessage('system', `Configuración guardada: <b>${aiConfig.provider.toUpperCase()}</b> activado.`);
     }
 
     function loadTools() {
@@ -385,32 +475,52 @@
         const input = document.getElementById('userPrompt');
         const text = input.value.trim();
         if(!text) return;
+        
+        if(!aiConfig.key && aiConfig.provider !== 'ollama') {
+            alert("Por favor configura tu API Key primero (⚙️).");
+            new bootstrap.Collapse(document.getElementById('configPanel'), { toggle: true });
+            return;
+        }
 
         appendMessage('user', text);
         chatHistory.push({role: "user", content: text});
         input.value = '';
-        showTyping();
+        const typingId = showTyping();
 
         try {
+            const payload = {
+                model: aiConfig.model,
+                messages: chatHistory,
+                tools: availableTools,
+                tool_choice: "auto",
+                temperature: 0.1 
+            };
+
             const response = await fetch("/api/openai_proxy", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
-                body: JSON.stringify({ model: "gpt-4o", messages: chatHistory, tools: availableTools, tool_choice: "auto" })
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${aiConfig.key}`,
+                    "x-base-url": aiConfig.baseUrl 
+                },
+                body: JSON.stringify(payload)
             });
+
             const data = await response.json();
-            
             if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
 
             const choice = data.choices[0];
             const msg = choice.message;
             chatHistory.push(msg); 
+            removeTyping(typingId);
 
-            if(msg.tool_calls) {
-                appendMessage('assistant', "⚙️ Consultando datos en tiempo real...", true);
+            if(msg.tool_calls && msg.tool_calls.length > 0) {
+                appendMessage('assistant', `<i>🔎 Ejecutando: ${msg.tool_calls[0].function.name}...</i>`, true);
                 
                 for(const toolCall of msg.tool_calls) {
                     const funcName = toolCall.function.name;
-                    const args = JSON.parse(toolCall.function.arguments);
+                    let args = {};
+                    try { args = JSON.parse(toolCall.function.arguments); } catch(e) {}
                     
                     const toolRes = await fetch('/api/execute', {
                         method: 'POST',
@@ -427,43 +537,89 @@
                     });
                 }
 
+                showTyping();
                 const finalRes = await fetch("/api/openai_proxy", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
-                    body: JSON.stringify({ model: "gpt-4o", messages: chatHistory })
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Authorization": `Bearer ${aiConfig.key}`,
+                        "x-base-url": aiConfig.baseUrl 
+                    },
+                    body: JSON.stringify({ model: aiConfig.model, messages: chatHistory })
                 });
                 const finalData = await finalRes.json();
-                removeTyping();
+                removeTyping(); 
+                
+                if (finalData.error) throw new Error(finalData.error.message);
                 const finalMsg = finalData.choices[0].message.content;
                 appendMessage('assistant', finalMsg);
                 chatHistory.push({role: "assistant", content: finalMsg});
 
             } else {
-                removeTyping();
                 appendMessage('assistant', msg.content);
             }
 
         } catch (err) {
             removeTyping();
-            appendMessage('assistant', "❌ Error: " + err.message);
+            appendMessage('system', "❌ Error: " + err.message);
         }
     }
 
-    function appendMessage(role, text, isStatus=false) {
+    function appendMessage(role, text, isTemporary=false) {
         const chatArea = document.getElementById('chatArea');
         const div = document.createElement('div');
         div.className = `d-flex align-items-start mb-3 ${role === 'user' ? 'justify-content-end' : ''}`;
-        const contentClass = role === 'user' ? 'bg-secondary text-white' : (isStatus ? 'bg-warning text-dark' : 'bg-primary text-white');
-        const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
-        div.innerHTML = `<div class="${contentClass} rounded p-3 shadow-sm" style="max-width: 80%; white-space: pre-wrap;">${formattedText}</div>`;
+        
+        let bgClass = 'bg-white border';
+        let icon = '<i class="fa-solid fa-robot text-primary mt-1"></i>';
+        
+        if (role === 'user') {
+            bgClass = 'bg-primary text-white';
+            icon = '';
+        } else if (role === 'system') {
+            bgClass = 'bg-danger bg-opacity-10 text-danger border-danger';
+            icon = '<i class="fa-solid fa-triangle-exclamation mt-1"></i>';
+        }
+
+        const formattedText = text ? text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>') : '';
+        div.innerHTML = `${role !== 'user' ? `<div class="me-2 fs-5">${icon}</div>` : ''}<div class="${bgClass} rounded p-3 shadow-sm" style="max-width: 85%; white-space: pre-wrap; font-size: 0.95rem;">${formattedText}</div>`;
         chatArea.appendChild(div);
         chatArea.scrollTop = chatArea.scrollHeight;
-        if(isStatus) return div; 
+        return div;
     }
 
-    let typingIndicator = null;
-    function showTyping() { typingIndicator = appendMessage('assistant', 'Pensando...', true); }
-    function removeTyping() { if(typingIndicator) { typingIndicator.remove(); typingIndicator = null; } }
+    function showTyping() {
+        const id = 'typing-' + Date.now();
+        const chatArea = document.getElementById('chatArea');
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = "d-flex align-items-center mb-3 text-muted ms-4 ps-2";
+        div.innerHTML = `<div class="spinner-grow spinner-grow-sm me-2" role="status"></div><small>Pensando...</small>`;
+        chatArea.appendChild(div);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        return id;
+    }
+    
+    function removeTyping(id) {
+        if(id) { const el = document.getElementById(id); if(el) el.remove(); } 
+        else { document.querySelectorAll('[id^="typing-"]').forEach(e => e.remove()); }
+    }
+
+    // ---- FUNCIONES GENERALES DASHBOARD ----
+    function updateSearchParam(id, label) {
+        if(tomSelectInstance) {
+            tomSelectInstance.addOption({id: id, title: label, label: 'Selección Manual'});
+            tomSelectInstance.setValue(id);
+            const badge = document.getElementById('target-badge');
+            badge.style.display = 'inline-block';
+            setTimeout(() => badge.style.display = 'none', 2000);
+            bootstrap.Offcanvas.getInstance(document.getElementById('nodeOffcanvas'))?.hide();
+            const sidebarEl = document.getElementById('sidebarOffcanvas');
+            const bsSidebar = bootstrap.Offcanvas.getInstance(sidebarEl);
+            if(bsSidebar) bsSidebar.hide();
+        }
+    }
+    function setFocusFromCanvas() { if (selectedNodeData) updateSearchParam(selectedNodeData.id, selectedNodeData.label); }
 
     {% if results %}
         const rows = {{ results.rows | json_encode() | safe }};
