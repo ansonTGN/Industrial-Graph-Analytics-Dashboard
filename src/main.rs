@@ -20,7 +20,7 @@ struct AppState {
     db_host: Mutex<String>, 
     tera: Tera,
     queries: Vec<QueryDefinition>,
-    http_client: reqwest::Client, // <--- NUEVO CLIENTE HTTP
+    http_client: reqwest::Client, 
 }
 
 #[derive(Deserialize)]
@@ -391,38 +391,53 @@ async fn api_get_tools(data: web::Data<AppState>) -> impl Responder {
 }
 
 // ---------------------------------------------------------------------
-// 👇👇👇 NUEVO PROXY PARA OPENAI (Soluciona el problema de CORS) 👇👇👇
+// 👇👇👇 PROXY LLM MULTI-PROVEEDOR (OpenAI, Groq, Ollama, etc.) 👇👇👇
 // ---------------------------------------------------------------------
-async fn proxy_openai(
+async fn proxy_llm(
     req: HttpRequest, 
     body: web::Json<serde_json::Value>,
     data: web::Data<AppState>
 ) -> impl Responder {
-    // 1. Extraer el header Authorization del frontend (donde va la Key del usuario)
-    let auth_header = match req.headers().get("Authorization") {
-        Some(h) => h,
-        None => return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Falta API Key"})),
+    // 1. Extraer headers de configuración enviados por el frontend
+    let auth_header = req.headers().get("Authorization"); 
+    let base_url_header = req.headers().get("x-base-url");
+
+    // 2. Determinar la URL destino (Por defecto OpenAI si no se especifica)
+    let target_url = match base_url_header {
+        Some(val) => val.to_str().unwrap_or("https://api.openai.com/v1/chat/completions"),
+        None => "https://api.openai.com/v1/chat/completions",
     };
 
-    // 2. Hacer la petición a OpenAI DESDE EL SERVIDOR (Rust -> OpenAI)
-    // Los servidores no tienen CORS, así que esto funciona siempre.
-    let response = data.http_client
-        .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", auth_header)
-        .header("Content-Type", "application/json")
-        .json(&body)
-        .send()
-        .await;
+    println!("🤖 AI Proxy -> Destino: {}", target_url);
 
-    // 3. Devolver la respuesta de OpenAI tal cual al frontend
-    match response {
+    // 3. Construir la petición desde el Servidor Rust
+    let mut request_builder = data.http_client
+        .post(target_url)
+        .header("Content-Type", "application/json")
+        .json(&body);
+
+    // Solo adjuntar Authorization si existe (Ollama a veces no lo necesita)
+    if let Some(auth) = auth_header {
+        request_builder = request_builder.header("Authorization", auth);
+    }
+
+    // 4. Enviar y retornar respuesta
+    match request_builder.send().await {
         Ok(res) => {
             let status = res.status();
-            let json_body: serde_json::Value = res.json().await.unwrap_or_default();
+            // Leemos como JSON, si falla usamos un JSON de error genérico
+            let json_body: serde_json::Value = res.json().await.unwrap_or_else(|_| {
+                serde_json::json!({"error": "Respuesta no válida del proveedor de IA o cuerpo vacío"})
+            });
             HttpResponse::build(status).json(json_body)
         },
         Err(e) => {
-            HttpResponse::InternalServerError().json(serde_json::json!({"error": format!("Error contactando OpenAI: {}", e)}))
+            eprintln!("❌ Error Proxy AI: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "message": format!("Error de conexión con el proveedor IA: {}", e)
+                }
+            }))
         }
     }
 }
@@ -442,7 +457,7 @@ async fn main() -> std::io::Result<()> {
         db_host: Mutex::new(String::new()),
         tera,
         queries: loaded_queries,
-        http_client: reqwest::Client::new(), // Inicializamos el cliente HTTP
+        http_client: reqwest::Client::new(), 
     });
     
     let port_str = env::var("PORT").unwrap_or_else(|_| "8081".to_string());
@@ -460,8 +475,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/execute", web::post().to(api_execute_query))
             .route("/api/ai/tools", web::get().to(api_get_tools))
             .route("/api/search", web::get().to(search_nodes))
-            // 👇 NUEVA RUTA PROXY 👇
-            .route("/api/openai_proxy", web::post().to(proxy_openai))
+            // 👇 RUTA ACTUALIZADA PARA SOPORTAR MÚLTIPLES PROVEEDORES
+            .route("/api/openai_proxy", web::post().to(proxy_llm))
     })
     .bind(("0.0.0.0", port))? 
     .run()
